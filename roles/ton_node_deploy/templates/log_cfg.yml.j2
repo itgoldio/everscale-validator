@@ -1,0 +1,86 @@
+# more info in https://docs.rs/log4rs/1.0.0/log4rs/
+
+# Scan this file for changes every 30 seconds
+refresh_rate: 30 seconds
+
+# write logs to file and rotate it.
+appenders:
+  rolling:
+    kind: rolling_file
+    encoder:
+      pattern: "{d(%Y-%m-%d %H:%M:%S.%f)} {l} [{h({t})}] {I}: {m}{n}"
+    path: {{ ton_rnode_log_dir }}/node.log
+    policy:
+      kind: compound
+      trigger:
+        kind: size
+        limit: 100 mb
+      roller:
+        kind: fixed_window
+        pattern: {{ ton_rnode_log_dir }}/node.{}.log
+        count: 10
+        base: 1
+
+root:
+# level can be: trace, debug, info, warn
+# trace include all levels,
+# debug include debug, info and warn levels,
+# info  include info and warn
+# warn  just warn level
+  level: off
+  appenders:
+    - rolling
+
+loggers:
+  # node messages
+  ton_node:
+    level: warn
+  boot:
+    level: off
+  sync:
+    level: off
+  telemetry:
+    level: off
+
+  # adnl messages
+  adnl:
+    level: off
+
+  overlay:
+    level: off
+
+  overlay_broadcast:
+    level: off
+
+  rldp:
+    level: off
+
+  dht:
+    level: off
+
+  # block messages
+  ton_block:
+    level: off
+
+  # block messages
+  executor:
+    level: off
+
+  # tvm messages
+  tvm:
+    level: off
+
+  librdkafka:
+    level: off
+
+  validator:
+    level: off
+
+  catchain:
+    level: off
+
+  validator_session:
+    level: off
+
+  storage:
+    level: off

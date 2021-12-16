@@ -1,0 +1,63 @@
+- name: Install freeton compile dependencies
+  apt:
+    name:
+      - git
+      - libssl-dev
+      - pkg-config
+      - build-essential
+      - autoconf
+      - automake
+      - m4
+      - cmake
+      - libtool
+      - clang
+      - tar
+      - gpg
+    state: latest
+    update_cache: yes
+    cache_valid_time: 3600
+
+# - name: Install libzstd packages
+#   apt:
+#     name: libzstd-dev
+#   when: (ansible_distribution == "Ubuntu" and ansible_distribution_major_version >= "20") or (ansible_distribution == "Debian" and ansible_distribution_major_version > "10")
+
+# - name: Download libzstd packages for Ubuntu "{{ ansible_distribution_major_version }}"
+#   get_url:
+#     url: '{{ item }}'
+#     dest: '/tmp/'
+#     mode: u=rw,g=rw,o=rw
+#   loop:
+#     - http://security.ubuntu.com/ubuntu/pool/main/libz/libzstd/libzstd-dev_1.4.4+dfsg-3ubuntu0.1_amd64.deb
+#     - http://security.ubuntu.com/ubuntu/pool/main/libz/libzstd/libzstd1_1.4.4+dfsg-3ubuntu0.1_amd64.deb
+#   when: ansible_distribution == "Ubuntu" and ansible_distribution_major_version < "20"
+
+# - name: Download libzstd packages for Debian
+#   get_url:
+#     url: '{{ item }}'
+#     dest: '/tmp/'
+#     mode: u=rw,g=rw,o=rw
+#   loop:
+#     - http://deb.debian.org/debian/pool/main/libz/libzstd/libzstd-dev_1.4.4+dfsg-3~bpo10+1_amd64.deb
+#     - http://deb.debian.org/debian/pool/main/libz/libzstd/libzstd1_1.4.4+dfsg-3~bpo10+1_amd64.deb
+#   when: ansible_distribution == "Debian" and ansible_distribution_major_version == "10"
+
+# - name: Install libzstd packages
+#   shell: apt-get install /tmp/libzstd*
+#   when: (ansible_distribution == "Debian" and ansible_distribution_major_version == "10") or (ansible_distribution == "Ubuntu" and ansible_distribution_major_version < "20")
+#   changed_when: false
+
+- name: Add {{ ton_node_scripts }} to PATH env
+  lineinfile:
+    dest: /etc/environment
+    state: present
+    backrefs: yes
+    regexp: 'PATH=(["]*)((?!.*?{{ ton_node_scripts }}:{{ ton_node_tools_dir }}).*?)(["]*)$'
+    line: "PATH=\\1\\2:{{ ton_node_scripts }}:{{ ton_node_tools_dir }}\\3"
+  when: ansible_facts['distribution'] == "Ubuntu"
+
+- name: Add {{ ton_node_scripts }} to PATH env
+  template:
+    src: "ton_env.sh.j2"
+    dest: "/etc/profile.d/ton_env.sh"
+  when: ansible_facts['distribution'] == "Debian"

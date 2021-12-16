@@ -1,0 +1,67 @@
+---
+
+- name: Include os specific tasks
+  include_tasks: "{{ ansible_pkg_mgr }}.yml"
+
+- name: Check if docker-compose exists
+  stat:
+    path: /usr/local/bin/docker-compose
+  register: docker_compose_status
+
+- name: Get last version of docker-compose
+  shell: curl -s https://api.github.com/repos/docker/compose/releases/latest | jq .name -r
+  args:
+    warn: no
+  register: docker_compose_version
+  when: not docker_compose_status.stat.exists
+
+- name: Install docker-compose
+  get_url: 
+    url : https://github.com/docker/compose/releases/download/{{ docker_compose_version.stdout }}/docker-compose-Linux-x86_64
+    dest: /usr/local/bin/docker-compose
+    mode: 'u+x,g+x'
+  when: not docker_compose_status.stat.exists
+
+- name: Create monitoring server dirs
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: u=rwx,g=rw,o=
+  loop:
+    - "/opt/monitoring_server"
+
+- name: Copy monitoring server docker-compose file
+  template:
+    src: 'docker-compose.yml.j2'
+    dest: '/opt/monitoring_server/docker-compose.yaml'
+  notify: restart_docker_compose
+
+- name: Copy grafana config files
+  copy:
+    src: "{{ item }}"
+    dest: "/opt/monitoring_server/"
+    mode: u=rw,g=r,o=
+    owner: "472"
+    group: root
+  notify: restart_docker_compose
+  loop:
+    - grafana-provisioning
+
+- name: Copy grafana datasource config
+  template:
+    src: "datasource.yml.j2"
+    dest: "/opt/monitoring_server/grafana-provisioning/datasources/datasource.yml"
+    owner: "472"
+    group: root
+  notify: restart_docker_compose
+
+- name: Set chronograf user credentionals
+  htpasswd:
+    path: /opt/monitoring_server/.htpasswd
+    name: "{{ CHRONOGRAF_USERNAME }}"
+    password: "{{ CHRONOGRAF_PASSWORD }}"
+    owner: root
+    mode: 0640
+  notify: restart_docker_compose
+  vars:
+    ansible_python_interpreter: python3

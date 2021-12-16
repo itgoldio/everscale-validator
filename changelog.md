@@ -1,0 +1,179 @@
+## 2.0
+- Added RFLD network
+- Added [Custler](https://github.com/FreeTON-Network/custler.uninode.git) scripts
+
+## 1.5.6
+- Change rust node default branch
+- Fixed rust version
+
+## 1.5.5
+- Ubuntu 18 and Debian 10 libzstd fixes
+
+## 1.5.4
+- fix ton-node-validate-next.sh answerd, when grep not found info
+
+## 1.5.3
+- tick depol twice (rustcup depol has another logic as mainnet depol)
+
+## 1.5.2
+- Change default path for depol files (for rustcup only)
+
+## 1.5.1
+- Added tone_node compression support - enabled by default
+
+## 1.5.0
+- fix scripts according tonos-cli changes
+- ability to set custom DAPP server
+- log collecting improvements
+- new freeton_node build envs
+
+## 1.4.8
+- add -m flag to ton-node-validate-current.sh and ton-node-validate-next.sh
+it fix output for monitoring style
+
+## 1.4.7
+- fix permissions on freeton user home folder
+- correct telegraf exec timeouts
+
+## 1.4.6
+- set tonos cli version 0.11.6
+- add TON_IS_RUSTNET var to ton-env.sh
+- improve ton-node-participant-state.sh
+
+## 1.4.5
+- set tonos cli version to v0.11.1
+
+## 1.4.4
+- update ton-depool-ticktok.sh - fix wrong calculation 
+
+## 1.4.3
+- update ton-depool-ticktok.sh - don't send ticktok if election started recently 
+
+## 1.4.2
+- added -t option to ticktock script to do ticktock until success
+
+## 1.4.1
+- fixed telegraf exec's timeouts and config rights
+- reduce verbosity of freeton node
+
+## 1.4.0
+support new keys for tonos_cli in ton-depool-ticktok.sh
+
+## 1.3.1
+- implemented statsd metrics collector with grafana dashboard
+
+## 1.3
+- add support for Debian 10, CentOS 8 and Oracle Linux 8
+- set environment flags for rust compiler (use hardware realization of aes instead of software)
+- added new features to grafana dashboard
+- improvements in shell scripts
+
+## 1.2.11
+there's no need to exec sed twice for scripts ton-node-validate-next.sh, ton-node-validate-current.s
+restart freeton node always if something happend (old value is on-failure)
+
+## 1.2.10
+- add missing data to ton-node-participant-state.sh
+- ton-depool-validation-request.sh store info that validation request was send
+
+## 1.2.9
+fix wrong vars in 
+- ton-election-date-end.sh
+- ton-election-date-start.sh
+- ton-election-state.sh
+
+
+## 1.2.8
+refactoring scripts for work with rustcup elector 
+add more info into readme
+
+## 1.2.7
+fix ton-depool-validation-request.sh, check vnext not curr list 
+
+## 1.2.6
+add script ton-node-validate-current.sh
+add script ton-node-validate-next.sh
+fix script ton-depool-validation-request.sh - check that node akready in vnext list
+
+## 1.2.5
+scripts: use TON_CLI_CONFIG instead of TON_DAPP
+
+## 1.2.4
+fix error in ton-election-state.sh
+
+## 1.2.3
+update script ton-node-diff.sh, add arg -f for endless node-diff polling
+improve deafult log size. from 10mb to 100mb
+Increase udp buffer 
+fix non-root user installation
+
+## 1.2.2
+update scripts ton-election-date-end.sh, ton-election-date-start.sh, ton-election-state.sh,
+ton-depool-ticktok.sh, ton-depool-validation-request.sh, ton-node-participant-state.sh
+hotfix for rustnet elector contact. 
+
+## 1.2.1
+update scripts ton-election-date-end.sh, ton-election-date-start.sh, ton-election-state.sh,
+hotfix for rustnet elector contact. It return empty result.
+
+## 1.2.0
+Update scripts: 
+- ton-env.sh delete unused variables DEPOOL_PROXY_1_ADDR, DEPOOL_PROXY_2_ADDR, add special variables for depool ticktoc
+- ton-env.sh add variables TIK_PRV_KEY, TIK_ADDR
+- ton-env.sh refactoring 
+- ton-wallet-transaction-confirm.sh add optional argumet VALIDATOR_WALLET_PRV_KEY_2
+- ton-election-state.sh return ERROR if dapp or election contract don't work
+- ton-depool-ticktok.sh add force mode and -f argument
+- ton-depool-ticktok.sh send ticktok ones by election cycle
+- ton-depool-proxy-1-balance.sh get proxy from dapp
+- ton-depool-proxy-2-balance.sh get proxy from dapp
+
+## 1.1.0
+
+Monitoring Added 
+- [telegraf](https://www.influxdata.com/time-series-platform/telegraf/) collect and send statistics
+- [Grafana](https://grafana.com/) show statistics dashbord
+- [InfluxDB](https://www.influxdata.com/) db for metrics
+- [Chronograf](https://www.influxdata.com/time-series-platform/chronograf/) GUI for InfluxDb
+
+Several scripts added for monitoring node and network state
+- ton-env (list of variables)
+- ton-check-env.sh ( service script. It's checking variables)
+- ton-depool-balance.sh (check depool balance)
+- ton-depool-proxy-1-balance.sh (check depool proxy 1 balance)
+- ton-depool-proxy-2-balance.sh (check depool proxy 2 balance)
+- ton-wallet-balance.sh (check wallet balance)
+- ton-election-date-end.sh (show date end of current election cycle)
+- ton-election-date-start.sh (show date start of current election cycle)
+- ton-election-state.sh (show election state)
+- ton-node-diff.sh (show time diff for local node)
+- ton-wallet-transaction-count.sh (show count of unsigned transactions between wallet and depool)
+- ton-depool-ticktok.sh (send ticktok command to depool)
+- ton-wallet-transaction-confirm.sh (confirm unsigned transactions between wallet and depool)
+- ton-depool-validation-request.sh (send validation request to elector)
+- ton-node-participant-state.sh (show that node in participant list or not)
+
+Files path was changed 
+- /opt/freeton -> /opt/freeton/bin (ton_node executable file)
+- /var/lib/freeton -> /opt/freeton/db (db for node)
+- /etc/freeton/contracts -> /opt/freeton/contracts (popular smart contracts)
+- /var/log/freeton -> /opt/freeton/logs (node logs)
+
+New path added
+- /opt/freeton/scripts (scrip[ts for node])
+- /opt/freeton/election (information about electoral cycles)
+- /home/freeton/ton-keys (keys and addresses for walletr and depool)
+
+Access mode for files is changed
+- add executabel rule for group 'freeton'
+- remove access for group 'other' 
+
+Some variables added
+- Need to recompile source code force 
+
+Some command line parametrs added
+- "flush" tag for change network
+
+## 1.0.0
+
+Install freeton rust node use ansible playbook

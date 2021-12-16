@@ -1,0 +1,75 @@
+---
+
+- name: Include os specific tasks
+  include_tasks: "{{ ansible_pkg_mgr }}.yml"
+
+- name: Add telegraf user to ton group
+  user:
+    name: telegraf
+    groups: "{{ ton_node_group }}"
+    append: yes
+  ignore_errors: yes
+
+- name: Copy default telegraf config
+  copy:
+    src: "telegraf.conf"
+    dest: "/etc/telegraf/telegraf.conf"
+    owner: telegraf
+    group: telegraf
+  notify: restart_telegraf
+
+- name: Copy telegraf env config
+  template:
+    src: "telegraf.j2"
+    dest: "/etc/default/telegraf"
+    owner: telegraf
+    group: telegraf
+  notify: restart_telegraf
+
+- name: Copy telegraf ton config
+  template:
+    src: "telegraf_freeton.conf.j2"
+    dest: "/etc/telegraf/telegraf.d/telegraf_freeton.conf"
+  notify: restart_telegraf
+
+- name: Fix telegraf dirs own
+  file:
+    path: "{{ item }}"
+    state: directory
+    recurse: yes
+    owner: telegraf
+    group: telegraf
+  loop:
+    - "/etc/telegraf"
+
+- name: Copy ton-env file
+  template:
+    src: "ton-env.j2"
+    dest: "{{ ton_node_scripts }}/ton-env.sh"
+    owner: "{{ ton_node_user }}"
+    group: "{{ ton_node_group }}"
+    mode: u=rwx,g=rx,o=
+
+- name: Copy monitoring scripts
+  copy:
+    src: "scripts/"
+    dest: "{{ ton_node_scripts }}/"
+    mode: u=rwx,g=rx,o=
+    owner: "{{ ton_node_user }}"
+    group: "{{ ton_node_group }}"
+
+- name: Copy Custler scripts
+  copy:
+    remote_src: true
+    src: "{{ ton_node_src_dir }}/custler.uninode/scripts/"
+    dest: "{{ ton_node_scripts }}/"
+    mode: preserve 
+    owner: "{{ ton_node_user }}"
+    group: "{{ ton_node_group }}"
+  when: ton_custler_scripts_enabled
+
+- name: Set executable for Custler scripts
+  file:
+    path: "{{ ton_node_scripts }}/"
+    mode: "u+rwx,g+rx,o-rwx"
+  when: ton_custler_scripts_enabled

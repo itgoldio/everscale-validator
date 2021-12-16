@@ -1,0 +1,19 @@
+[Unit]
+Description=TON rust node
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+ExecStart={{ ton_node_bin_dir }}/ton_node -c {{ ton_rnode_config_dir }}/
+ExecStop=/bin/kill -HUP $MAINPID
+WorkingDirectory={{ ton_rnode_db_dir }}
+Restart=always
+User={{ ton_node_user }}
+Group={{ ton_node_group }}
+StandardOutput=file:{{ ton_rnode_log_dir }}/noded.log
+StandardError=file:{{ ton_rnode_log_dir }}/noded.err
+LimitNOFILE=infinity
+LimitNPROC=infinity
+
+[Install]
+WantedBy=multi-user.target

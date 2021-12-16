@@ -1,0 +1,21 @@
+- name: Install system packages
+  dnf:
+    name:
+      - "@Development tools"
+      - openssl-devel
+#      - libzstd-devel
+      - clang
+      - cmake
+    state: latest
+
+- name: Install system packages
+  dnf:
+    name:
+      - libzstd-devel
+    state: absent
+
+- name: Add {{ ton_node_scripts }} to PATH env
+  lineinfile:
+    dest: /etc/profile.d/sh.local
+    state: present
+    line: "PATH=$PATH:{{ ton_node_scripts }}:{{ ton_node_tools_dir }}"

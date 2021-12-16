@@ -1,0 +1,56 @@
+# Time sync parameters
+ntp_enabled: true  # or 'false' if you don't want to install and configure the ntp service
+# Do not set custom ntp servers to use default ntp pool
+ntp_servers: []
+
+# Set servers timezone: UTC, Europe/Moscow, etc... (all timezones listed here: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones )
+timezone: "Europe/Moscow"
+
+# Transparent Huge Pages
+disable_thp: true  # or 'false'
+
+# Kernel parameters
+sysctl_set: true  # or 'false'
+# these parameters for example! Specify kernel options for your system
+sysctl_conf:
+  ton_node:
+    - { name: "net.ipv6.conf.all.disable_ipv6", value: "1" }
+    - { name: "net.ipv6.conf.default.disable_ipv6", value: "1" }
+    - { name: "net.ipv6.conf.lo.disable_ipv6", value: "1" }
+    - { name: "net.core.rmem_max", value: "134217728" }
+    - { name: "net.core.wmem_max", value: "134217728" }
+    - { name: "net.core.rmem_default", value: "134217728" }
+    - { name: "net.core.wmem_default", value: "134217728" }
+    - { name: "net.ipv4.tcp_mem", value: "1048576 16777216 67108864" }
+    - { name: "net.ipv4.tcp_rmem", value: "1048576 16777216 67108864" }
+    - { name: "net.ipv4.tcp_wmem", value: "1048576 16777216 67108864" }
+    - { name: "net.ipv4.udp_mem", value: "1048576 16777216 67108864" }
+    - { name: "net.ipv4.udp_rmem_min", value: "1048576" }
+    - { name: "net.ipv4.udp_wmem_min", value: "1048576" }
+    - { name: "net.core.optmem_max", value: "134217728" }
+    - { name: "net.core.somaxconn", value: "65535" }
+    - { name: "net.core.netdev_max_backlog", value: "250000" }
+    - { name: "net.ipv4.conf.all.rp_filter", value: "1" }
+    - { name: "net.ipv4.conf.all.arp_filter", value: "1" }
+    - { name: "net.ipv4.conf.all.arp_ignore", value: "1" }
+    - { name: "net.ipv4.conf.all.arp_announce", value: "2" }
+    - { name: "vm.overcommit_memory", value: "2" }
+    - { name: "vm.overcommit_ratio", value: "100" }
+    - { name: "vm.swappiness", value: "10" }
+    - { name: "vm.vfs_cache_pressure", value: "200" }
+
+# Max open file limit
+set_limits: true  # or 'false'
+soft_nofile: 65536
+hard_nofile: 200000
+
+# zstd parameters
+zstd_version: 1.5.0
+
+# Rust parameters
+rustup_mirror : https://static.rust-lang.org/rustup/dist
+rustup_platform : x86_64-unknown-linux-gnu
+# Default rust version: stable|beta|nightly|<major.minor>|<major.minor.patch>
+rustup_default_toolchain: 1.55
+# Rust flags compile environment
+rust_flags: "-C target-cpu=native"

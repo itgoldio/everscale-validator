@@ -1,0 +1,120 @@
+---
+
+- name: Copy ton node tools binaries
+  copy:
+    src: "{{ ton_node_src_dir }}/release/{{ item }}"
+    dest: "{{ ton_node_tools_dir }}/{{ item }}"
+    owner: "{{ ton_node_user }}"
+    group: "{{ ton_node_group }}"
+    mode: u=rwx,g=rx,o=
+    remote_src: yes
+  loop:
+    - console
+    - dhtscan
+    - gendht
+    - keygen
+    - print
+    - zerostate
+  when: ton_node_tools_sources.changed or ton_node_tools_force_recompile
+
+- name: Copy tonos cli binaries
+  copy:
+    src: "{{ ton_node_src_dir }}/release/tonos-cli"
+    dest: "{{ ton_node_tools_dir }}"
+    owner: "{{ ton_node_user }}"
+    group: "{{ ton_node_group }}"
+    mode: u=rwx,g=rx,o=
+    remote_src: yes
+  when: tonos_cli_sources.changed or tonos_cli_force_recompile
+
+- name: Copy tvm linker binaries
+  copy:
+    src: "{{ ton_node_src_dir }}/release/tvm_linker"
+    dest: "{{ ton_node_tools_dir }}"
+    owner: "{{ ton_node_user }}"
+    group: "{{ ton_node_group }}"
+    mode: u=rwx,g=rx,o=
+    remote_src: yes
+  when: tvm_linker_sources.changed or tvm_linker_force_recompile
+
+- name: Copy ton node binaries
+  copy:
+    src: "{{ ton_node_src_dir }}/release/ton_node"
+    dest: "{{ ton_node_bin_dir }}"
+    owner: "{{ ton_node_user }}"
+    group: "{{ ton_node_group }}"
+    mode: u=rwx,g=rx,o=
+    remote_src: yes
+  when: ton_node_sources.changed or ton_node_sources_rfld.changed or ton_node_force_recompile
+  notify: ton_systemd
+
+- name: Copy default ton rnode config
+  copy:
+    src: "{{ ton_node_src_dir }}/ton_rnode/configs/default_config.json"
+    dest: "{{ ton_rnode_config_dir }}"
+    owner: "{{ ton_node_user }}"
+    group: "{{ ton_node_group }}"
+    mode: u=rw,g=r,o=
+    remote_src: yes
+  notify: ton_systemd
+
+- name: Copy logging config
+  template:
+    src: "log_cfg.yml.j2"
+    dest: "{{ ton_rnode_config_dir }}/log_cfg.yml"
+    owner: "{{ ton_node_user }}"
+    group: "{{ ton_node_group }}"
+    mode: u=rw,g=r,o=
+
+- name: Copy ton systemd service environment variables
+  copy:
+    src: ton.env.conf
+    dest: "/etc/systemd/system/{{ ton_node_service_name }}.service.d/"
+    mode: u=rw,g=r,o=r
+  notify: ton_systemd
+
+- name: Create ton systemd service (RUST)
+  template:
+    src: "ton-rnode.service.j2"
+    dest: "/etc/systemd/system/{{ ton_node_service_name }}.service"
+    mode: u=rw,g=r,o=r
+  notify: ton_systemd
+
+- name: Get smart contracts sources
+  git:
+    repo: "{{ ton_smartcontracts_github_repo }}"
+    dest: "{{ ton_node_src_dir }}/ton-labs-contracts"
+    version: "{{ ton_smartcontracts_github_commit_id }}"
+
+- name: Copy smart contracts
+  copy:
+    remote_src: true
+    src: "{{ ton_node_src_dir }}/ton-labs-contracts/solidity/"
+    dest: "{{ ton_node_contracts_dir }}/"
+    mode: u=rwx,g=rx,o=
+    owner: "{{ ton_node_user }}"
+    group: "{{ ton_node_group }}"
+
+- name: Get rfld custler sources
+  git:
+    repo: "{{ ton_custler_github_repo }}"
+    dest: "{{ ton_node_src_dir }}/custler.uninode"
+    version: "{{ ton_custler_github_commit_id }}"
+
+- name: Copy rfld smart contracts
+  copy:
+    remote_src: true
+    src: "{{ ton_node_src_dir }}/custler.uninode/configs/depool_RFLD"
+    dest: "{{ ton_node_contracts_dir }}/"
+    mode: u=rwx,g=rx,o=
+    owner: "{{ ton_node_user }}"
+    group: "{{ ton_node_group }}"
+
+- name: Copy additional smart contracts
+  get_url:
+    url: "{{ item }}"
+    dest: "{{ ton_node_contracts_dir }}/"
+    owner: "{{ ton_node_user }}"
+    group: "{{ ton_node_group }}"
+    mode: u=rw,g=r,o=
+  loop: "{{ ton_node_additional_contracts | list | unique }}"

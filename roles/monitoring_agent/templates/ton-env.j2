@@ -1,0 +1,63 @@
+#!/bin/bash -eE
+
+# it is rustnet
+# 0 = false
+# 1 = true
+export TON_IS_RUSTNET={% if ton_node_config == "rfld" %}1{% else %}0{% endif %}
+
+# path to this file
+export TON_ENV_FILE_PATH="{{ ton_node_scripts }}/ton-env.sh"
+
+# path to TON OS command line tool
+# source code: https://github.com/tonlabs/tonos-cli 
+export TON_CLI="{{ ton_node_tools_dir }}/tonos-cli"
+export TON_CLI_CONFIG="{{ ton_rnode_config_dir }}/tonos-cli.conf.json"
+
+
+# path to rust validator console
+# source code: https://github.com/tonlabs/ton-labs-node-tools
+export TON_CONSOLE="{{ ton_node_tools_dir }}/console"
+export TON_CONSOLE_CONFIG="{{ ton_rnode_config_dir }}/console.json"
+
+export TON_NODE_CONFIG="{{ ton_rnode_config_dir }}/config.json"
+
+# directory for keys and addresses
+#=================
+export KEYS_DIR="{{ ton_node_keys }}"
+
+
+# validator wallet 
+#=================
+export VALIDATOR_WALLET_ADDR_FILE_NAME="$HOSTNAME.addr"
+if [ -f $KEYS_DIR/$VALIDATOR_WALLET_ADDR_FILE_NAME ] ; then export VALIDATOR_WALLET_ADDR=`cat $KEYS_DIR/$VALIDATOR_WALLET_ADDR_FILE_NAME` ; fi
+
+# path to key file for wallet 
+export VALIDATOR_WALLET_PRV_KEY_1_FILE_NAME="msig.keys.json"
+if [ -f $KEYS_DIR/$VALIDATOR_WALLET_PRV_KEY_1_FILE_NAME ] ; then export VALIDATOR_WALLET_PRV_KEY_1=$KEYS_DIR/$VALIDATOR_WALLET_PRV_KEY_1_FILE_NAME ; fi
+
+export VALIDATOR_WALLET_PRV_KEY_2_FILE_NAME="msig2.keys.json"
+if [ -f $KEYS_DIR/$VALIDATOR_WALLET_PRV_KEY_2_FILE_NAME ] ; then export VALIDATOR_WALLET_PRV_KEY_2=$KEYS_DIR/$VALIDATOR_WALLET_PRV_KEY_2_FILE_NAME ; fi
+
+
+
+# depool
+#=================
+export DEPOOL_ADDR_FILE_NAME="depool.addr"
+if [ -f $KEYS_DIR/$DEPOOL_ADDR_FILE_NAME ] ; then export DEPOOL_ADDR=`cat $KEYS_DIR/$DEPOOL_ADDR_FILE_NAME` ; fi
+
+export DEPOOL_TICK_ADDR_FILE_NAME="tik.addr"
+if [ -f $KEYS_DIR/$DEPOOL_TICK_ADDR_FILE_NAME ] ; then export TIK_ADDR=`cat $KEYS_DIR/$DEPOOL_TICK_ADDR_FILE_NAME` ; fi
+export DEPOOL_TICK_KEY_FILE_NAME="tik.keys.json"
+if [ -f $KEYS_DIR/$DEPOOL_TICK_KEY_FILE_NAME ] ; then export TIK_PRV_KEY=$KEYS_DIR/$DEPOOL_TICK_KEY_FILE_NAME ; fi
+
+# smart contracts
+#=================
+export TON_CONTRACT_SAFEMULTISIGWALLET_ABI="{{ ton_node_contracts_dir }}/SafeMultisigWallet.abi.json"
+
+export TON_CONTRACT_ELECTOR_ABI="{{ ton_node_contracts_dir }}/Elector.abi.json"
+
+export TON_CONTRACT_DEPOOL_ABI="{{ ton_node_contracts_dir }}/DePool.abi.json"
+
+#election
+#=================
+export TON_ELECTION_FOLDER="{{ ton_node_election }}"

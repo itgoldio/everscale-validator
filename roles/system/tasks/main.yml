@@ -1,0 +1,82 @@
+---
+
+- name: Create TON group
+  group:
+    name: "{{ ton_node_group }}"
+    state: present
+
+- name: Create TON user
+  user:
+    name: "{{ ton_node_user }}"
+    comment: "TON node user"
+    group: "{{ ton_node_group }}"
+    shell: /bin/bash
+    state: present
+  register: ton_user_created
+
+- name: Set home directory variable
+  set_fact:
+    ton_node_user_home: "{{ ton_user_created.home }}"
+
+- name: Create dirs
+  file:
+    path: "{{ ton_node_work_dir }}"
+    state: directory
+    mode: u=rwx,g=rx,o=
+    owner: "{{ ton_node_user }}"
+    group: "{{ ton_node_group }}"
+  when: not additional_disk_mounted
+
+- name: Create dirs (if used additional disk)
+  file:
+    path: "{{ additional_mount }}"
+    state: directory
+    mode: u=rwx,g=rx,o=
+    owner: "{{ ton_node_user }}"
+    group: "{{ ton_node_group }}"
+  when: additional_disk_mounted and ton_user_created
+
+- name: Create symbolic link (if used additional disk)
+  file:
+    src: "{{ additional_mount }}"
+    dest: "{{ ton_node_work_dir }}"
+    state: link
+  when: additional_disk_mounted and ton_user_created
+
+- name: Set timezone to "{{ timezone }}"
+  timezone:
+    name: "{{ timezone }}"
+  when: timezone is defined and timezone | length > 0
+
+- name: Include os specific tasks
+  include_tasks: "{{ ansible_pkg_mgr }}.yml"
+
+- name: Linux PAM limits | add or modify nofile limits
+  pam_limits:
+    domain: "{{ ton_node_user }}"
+    limit_type: "{{ item.limit_type }}"
+    limit_item: "{{ item.limit_item }}"
+    value: "{{ item.value }}"
+  loop:
+    - {limit_type: 'soft', limit_item: 'nofile', value: "{{ soft_nofile }}"}
+    - {limit_type: 'hard', limit_item: 'nofile', value: "{{ hard_nofile }}"}
+  when: set_limits is defined and set_limits|bool
+
+- name: Create systemd service "disable-transparent-huge-pages.service"
+  copy:
+    src: 'disable-transparent-huge-pages.service'
+    dest: /etc/systemd/system/disable-transparent-huge-pages.service
+  notify: "restart disable-thp"
+  when: disable_thp is defined and disable_thp|bool
+
+- name: Setting kernel parameters
+  sysctl:
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+    sysctl_set: true
+    state: present
+    sysctl_file: "/etc/sysctl.d/99-ton.conf"
+    reload: true
+  loop: "{{ sysctl_conf.ton_node | list | unique }}"
+  ignore_errors: true
+  when: sysctl_set|bool and sysctl_conf | length > 0
