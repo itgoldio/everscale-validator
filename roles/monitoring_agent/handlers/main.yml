@@ -7,4 +7,4 @@
     enabled: true
     state: restarted
   listen: restart_telegraf
-  when: use_telegraf|b == true
+  when: use_telegraf

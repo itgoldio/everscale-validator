@@ -13,7 +13,6 @@ export TON_ENV_FILE_PATH="{{ ton_node_scripts }}/ton-env.sh"
 export TON_CLI="{{ ton_node_tools_dir }}/tonos-cli"
 export TON_CLI_CONFIG="{{ ton_rnode_config_dir }}/tonos-cli.conf.json"
 
-
 # path to rust validator console
 # source code: https://github.com/tonlabs/ton-labs-node-tools
 export TON_CONSOLE="{{ ton_node_tools_dir }}/console"
@@ -50,13 +49,18 @@ if [ -f $KEYS_DIR/$DEPOOL_TICK_ADDR_FILE_NAME ] ; then export TIK_ADDR=`cat $KEY
 export DEPOOL_TICK_KEY_FILE_NAME="tik.keys.json"
 if [ -f $KEYS_DIR/$DEPOOL_TICK_KEY_FILE_NAME ] ; then export TIK_PRV_KEY=$KEYS_DIR/$DEPOOL_TICK_KEY_FILE_NAME ; fi
 
+
 # smart contracts
 #=================
-export TON_CONTRACT_SAFEMULTISIGWALLET_ABI="{{ ton_node_contracts_dir }}/SafeMultisigWallet.abi.json"
-
+{% if ton_node_config == "main" and ton_custler_scripts_enabled %}
+export TON_CONTRACT_SAFEMULTISIGWALLET_ABI="{{ ton_node_contracts_dir }}/safemultisig/SafeMultisigWallet.abi.json"
 export TON_CONTRACT_ELECTOR_ABI="{{ ton_node_contracts_dir }}/Elector.abi.json"
-
+export TON_CONTRACT_DEPOOL_ABI="{{ ton_node_contracts_dir }}/depool/DePool.abi.json"
+{% else %}
+export TON_CONTRACT_SAFEMULTISIGWALLET_ABI="{{ ton_node_contracts_dir }}/SafeMultisigWallet.abi.json"
+export TON_CONTRACT_ELECTOR_ABI="{{ ton_node_contracts_dir }}/Elector.abi.json"
 export TON_CONTRACT_DEPOOL_ABI="{{ ton_node_contracts_dir }}/DePool.abi.json"
+{% endif %}
 
 #election
 #=================
