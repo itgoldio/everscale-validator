@@ -24,30 +24,77 @@ export TON_NODE_CONFIG="{{ ton_rnode_config_dir }}/config.json"
 #=================
 export KEYS_DIR="{{ ton_node_keys }}"
 
-
 # validator wallet 
 #=================
-export VALIDATOR_WALLET_ADDR_FILE_NAME="$HOSTNAME.addr"
-if [ -f $KEYS_DIR/$VALIDATOR_WALLET_ADDR_FILE_NAME ] ; then export VALIDATOR_WALLET_ADDR=`cat $KEYS_DIR/$VALIDATOR_WALLET_ADDR_FILE_NAME` ; fi
+if [[ -f ${KEYS_DIR}/${hNameShort}.addr ]]
+then
+  export VALIDATOR_WALLET_ADDR_FILE_NAME="${KEYS_DIR}/${hNameShort}.addr"
+  export VALIDATOR_WALLET_ADDR=$( cat $KEYS_DIR/$VALIDATOR_WALLET_ADDR_FILE_NAME )
+elif [[ -f ${KEYS_DIR}/${hNameLong}.addr ]]
+  export VALIDATOR_WALLET_ADDR_FILE_NAME="${KEYS_DIR}/${hNameLong}.addr"
+  export VALIDATOR_WALLET_ADDR=$( cat $KEYS_DIR/$VALIDATOR_WALLET_ADDR_FILE_NAME )
+else
+  export VALIDATOR_WALLET_ADDR_FILE_NAME=""
+  export VALIDATOR_WALLET_ADDR=""
+fi
 
 # path to key file for wallet 
-export VALIDATOR_WALLET_PRV_KEY_1_FILE_NAME="msig.keys.json"
-if [ -f $KEYS_DIR/$VALIDATOR_WALLET_PRV_KEY_1_FILE_NAME ] ; then export VALIDATOR_WALLET_PRV_KEY_1=$KEYS_DIR/$VALIDATOR_WALLET_PRV_KEY_1_FILE_NAME ; fi
+if [[ -f $KEYS_DIR/msig.keys.txt ]]
+then
+  export VALIDATOR_WALLET_PRV_KEY_1_FILE_NAME="$KEYS_DIR/msig.keys.txt"
+  export VALIDATOR_WALLET_PRV_KEY_1=$KEYS_DIR/$VALIDATOR_WALLET_PRV_KEY_1_FILE_NAME
+elif [[ -f $KEYS_DIR/msig.keys.json ]]
+  export VALIDATOR_WALLET_PRV_KEY_1_FILE_NAME="$KEYS_DIR/msig.keys.json"
+  export VALIDATOR_WALLET_PRV_KEY_1=$KEYS_DIR/$VALIDATOR_WALLET_PRV_KEY_1_FILE_NAME
+else
+  export VALIDATOR_WALLET_PRV_KEY_1_FILE_NAME=""
+  export VALIDATOR_WALLET_PRV_KEY_1=""
+fi
 
-export VALIDATOR_WALLET_PRV_KEY_2_FILE_NAME="msig2.keys.json"
-if [ -f $KEYS_DIR/$VALIDATOR_WALLET_PRV_KEY_2_FILE_NAME ] ; then export VALIDATOR_WALLET_PRV_KEY_2=$KEYS_DIR/$VALIDATOR_WALLET_PRV_KEY_2_FILE_NAME ; fi
 
-
+if [[ -f $KEYS_DIR/msig2.keys.txt ]]
+then
+  export VALIDATOR_WALLET_PRV_KEY_2_FILE_NAME="$KEYS_DIR/msig2.keys.txt"
+  export VALIDATOR_WALLET_PRV_KEY_2=$KEYS_DIR/$VALIDATOR_WALLET_PRV_KEY_2_FILE_NAME
+elif [[ -f $KEYS_DIR/msig2.keys.json ]]
+  export VALIDATOR_WALLET_PRV_KEY_2_FILE_NAME="$KEYS_DIR/msig2.keys.json"
+  export VALIDATOR_WALLET_PRV_KEY_2=$KEYS_DIR/$VALIDATOR_WALLET_PRV_KEY_2_FILE_NAME
+else
+  export VALIDATOR_WALLET_PRV_KEY_2_FILE_NAME=""
+  export VALIDATOR_WALLET_PRV_KEY_2=""
+fi
 
 # depool
 #=================
-export DEPOOL_ADDR_FILE_NAME="depool.addr"
-if [ -f $KEYS_DIR/$DEPOOL_ADDR_FILE_NAME ] ; then export DEPOOL_ADDR=`cat $KEYS_DIR/$DEPOOL_ADDR_FILE_NAME` ; fi
+if [[ -f $KEYS_DIR/depool.addr ]]
+then
+  export DEPOOL_ADDR_FILE_NAME="depool.addr"
+  export DEPOOL_ADDR=$( cat $KEYS_DIR/$DEPOOL_ADDR_FILE_NAME )
+else
+  export DEPOOL_ADDR_FILE_NAME=""
+  export DEPOOL_ADDR=""
+fi
 
-export DEPOOL_TICK_ADDR_FILE_NAME="tik.addr"
-if [ -f $KEYS_DIR/$DEPOOL_TICK_ADDR_FILE_NAME ] ; then export TIK_ADDR=`cat $KEYS_DIR/$DEPOOL_TICK_ADDR_FILE_NAME` ; fi
-export DEPOOL_TICK_KEY_FILE_NAME="tik.keys.json"
-if [ -f $KEYS_DIR/$DEPOOL_TICK_KEY_FILE_NAME ] ; then export TIK_PRV_KEY=$KEYS_DIR/$DEPOOL_TICK_KEY_FILE_NAME ; fi
+# yacht!
+myRes=$( ls -1 {{ ton_node_keys }} | grep -iqE "^tik.addr$" )
+if [[ $? -eq 0 ]]
+then
+  myRes=$( ls -1 {{ ton_node_keys }} | grep -iE "^tik.addr$" )
+  export DEPOOL_TICK_ADDR_FILE_NAME="${myRes}"
+  export TIK_ADDR=$( cat $KEYS_DIR/$DEPOOL_TICK_ADDR_FILE_NAME )
+fi
+
+myRes=$( ls -1 {{ ton_node_keys }} | grep -iqE "^tik.keys.json$" )
+if [[ $? -eq 0 ]]
+then
+  myRes=$( ls -1 {{ ton_node_keys }} | grep -iE "^tik.keys.json$" )
+  export DEPOOL_TICK_KEY_FILE_NAME="${myRes}"
+  export TIK_PRV_KEY=$KEYS_DIR/$DEPOOL_TICK_KEY_FILE_NAME
+fi
+
+#election
+#=================
+export TON_ELECTION_FOLDER="{{ ton_node_election }}"
 
 
 # smart contracts
@@ -61,6 +108,7 @@ export TON_CONTRACT_SAFEMULTISIGWALLET_ABI="{{ ton_node_contracts_dir }}/SafeMul
 export TON_CONTRACT_ELECTOR_ABI="{{ ton_node_contracts_dir }}/Elector.abi.json"
 export TON_CONTRACT_DEPOOL_ABI="{{ ton_node_contracts_dir }}/DePool.abi.json"
 {% endif %}
+
 
 #election
 #=================
