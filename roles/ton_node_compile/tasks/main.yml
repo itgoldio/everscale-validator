@@ -77,17 +77,6 @@
     version: "{{ ton_node_github_commit_id }}"
     force: true
   register: ton_node_sources
-  when: ton_node_config != "rfld"
-
-- name: Get rfld ton node sources
-  git:
-    repo: "{{ ton_node_github_repo_rfld }}"
-    dest: "{{ ton_node_src_dir }}/ton_rnode"
-    version: "{{ ton_node_github_rfld_commit_id }}"
-    force: true
-  register: ton_node_sources_rfld
-  when: ton_node_config == "rfld"
-
 
 - name:  Ton node add features
   blockinfile: 
@@ -96,6 +85,7 @@
     insertafter: '\[features\]'
     block:  |
       sha2-native = ['sha2/asm', 'ed25519-dalek/asm']
+  when: ton_node_config == "rfld"
 
 - name:  Ton node add dependencies
   blockinfile: 
@@ -104,6 +94,7 @@
     insertafter: '\[dependencies\]'
     block:  |
       ed25519-dalek = '1.0'
+  when: ton_node_config == "rfld"
 
 - name: Get ton node tools sources
   git:
@@ -145,20 +136,6 @@
     GC_TON_NODE: "{{ ton_node_sources.after }}"
     ZSTD_LIB_DIR: "{% if ansible_pkg_mgr == 'dnf' %}/usr/lib64{% elif ansible_pkg_mgr == 'apt' %}/usr/lib/x86_64-linux-gnu{% endif %}"
     PKG_CONFIG_PATH: /usr/local/lib/pkgconfig
-
-# - name: Build ton node (groth16 support)
-#   block:
-#     - name: Update repo deps for freeton node
-#       command: '{{ ansible_env.HOME }}/.cargo/bin/cargo update --manifest-path {{ ton_node_src_dir }}/ton_rnode/Cargo.toml'
-#     - name: Build repo | freeton node
-#       command: '{{ ansible_env.HOME }}/.cargo/bin/cargo build --manifest-path {{ ton_node_src_dir }}/ton_rnode/Cargo.toml --target-dir {{ ton_node_src_dir }} --release{% if ton_node_metrics_enabled == true %} --features metrics{% endif %}{% if ton_node_compression_enabled == true %} --features compression{% endif %}{% if ton_node_external_db_enabled == true %} --features external_db{% endif %}'
-#   when: ton_node_sources_rfld.changed or ton_node_rfld_force_recompile
-#   environment:
-#     RUSTFLAGS: "{{ rust_flags }}"
-#     RUST_VERSION: "{{ rust_version.stdout }}"
-#     GC_TON_NODE: "{{ ton_node_sources_rfld.after }}"
-#     ZSTD_LIB_DIR: "{% if ansible_pkg_mgr == 'dnf' %}/usr/lib64{% elif ansible_pkg_mgr == 'apt' %}/usr/lib/x86_64-linux-gnu{% endif %}"
-#     PKG_CONFIG_PATH: /usr/local/lib/pkgconfig
 
 - name: Build ton node tools
   block:

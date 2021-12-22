@@ -53,7 +53,7 @@ tonos_cli_force_recompile: true
 
 # Get TVM linker commit id: https://github.com/tonlabs/TVM-linker/commits"
 tvm_linker_github_repo: "https://github.com/tonlabs/TVM-linker.git"
-tvm_linker_github_commit_id: "master"
+tvm_linker_github_commit_id: "0.14.2"
 
 # Recompile binary without sources changes: false|true
 tvm_linker_force_recompile: true
@@ -114,7 +114,7 @@ ton_smartcontracts_github_commit_id: "master"
 
 ton_node_additional_contracts:
   - https://github.com/FreeTON-Network/fld.ton.dev/raw/main/scripts/Marvin.abi.json
-  - https://raw.githubusercontent.com/tonlabs/rustnet.ton.dev/main/docker-compose/ton-node/configs/Elector.abi.json
+  - https://raw.githubusercontent.com/tonlabs/rustnet.ton.dev/mainnet/docker-compose/ton-node/configs/Elector.abi.json
 
 
 ###
