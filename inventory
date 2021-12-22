@@ -1,7 +1,6 @@
 # Specify your hosts IP addresses
 [ton_node]
-#127.0.0.1 ansible_connection=local
-78.140.242.19
+127.0.0.1 ansible_connection=local
 
 
 [monitoring_server]

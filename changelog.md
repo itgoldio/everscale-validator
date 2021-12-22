@@ -1,5 +1,5 @@
 ## 2.0
-- Added RFLD network
+- Added mainnet support
 - Added [Custler](https://github.com/FreeTON-Network/custler.uninode.git) scripts
 
 ## 1.5.6
