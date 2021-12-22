@@ -9,8 +9,13 @@ export TON_IS_RUSTNET={% if ton_node_config == "rfld" %}1{% else %}0{% endif %}
 export TON_ENV_FILE_PATH="{{ ton_node_scripts }}/ton-env.sh"
 
 # path to TON OS command line tool
-# source code: https://github.com/tonlabs/tonos-cli 
+# source code: https://github.com/tonlabs/tonos-cli
 export TON_CLI="{{ ton_node_tools_dir }}/tonos-cli"
+if [[ ! -f "{{ ton_rnode_config_dir }}/tonos-cli.conf.json" ]]
+then
+  $TON_CLI config --url https://main.ton.dev 2>/dev/null 1>&2
+  /bin/cp "tonos-cli.conf.json" "{{ ton_rnode_config_dir }}/tonos-cli.conf.json"
+fi
 export TON_CLI_CONFIG="{{ ton_rnode_config_dir }}/tonos-cli.conf.json"
 
 # path to rust validator console
