@@ -32,14 +32,14 @@ ton_node_global_config_URL_list:
 
 # Get freeton node commit id: https://github.com/tonlabs/ton-labs-node/commits
 ton_node_github_repo: "https://github.com/tonlabs/ton-labs-node.git"
-ton_node_github_commit_id: "_d184970b25b5521e4399b23193667bc9f2f02aa4_"
+ton_node_github_commit_id: "b7702c1504e8a8a9f8231fa794043de29f4375ae"
 
 # Recompile binary without sources changes: false|true
 ton_node_force_recompile: true
 
 # Get freeton node tools commit id: https://github.com/tonlabs/ton-labs-node-tools/commits"
 ton_node_tools_github_repo: "https://github.com/tonlabs/ton-labs-node-tools.git"
-ton_node_tools_github_commit_id: "master"
+ton_node_tools_github_commit_id: "183bb2a777db5c1e3186d26904dfcc3d8bb9a1b5"
 
 # Recompile binary without sources changes: false|true
 ton_node_tools_force_recompile: true
