@@ -43,6 +43,9 @@ sysctl_conf:
 set_limits: true  # or 'false'
 soft_nofile: 65536
 hard_nofile: 200000
+soft_nproc: 65000
+hard_nproc: 200000
+memlock: "unlimited"
 
 # zstd parameters
 zstd_version: 1.5.0

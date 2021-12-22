@@ -60,6 +60,9 @@
   loop:
     - {limit_type: 'soft', limit_item: 'nofile', value: "{{ soft_nofile }}"}
     - {limit_type: 'hard', limit_item: 'nofile', value: "{{ hard_nofile }}"}
+    - {limit_type: 'soft', limit_item: 'nproc', value: "{{ soft_nproc }}"}
+    - {limit_type: 'hard', limit_item: 'nproc', value: "{{ hard_nproc }}"}
+    - {limit_type: '-', limit_item: 'memlock', value: "{{ memlock }}"}
   when: set_limits is defined and set_limits|bool
 
 - name: Create systemd service "disable-transparent-huge-pages.service"
