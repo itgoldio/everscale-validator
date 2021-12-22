@@ -109,7 +109,7 @@
   become: yes
   become_user: "{{ ton_node_user }}"
   loop:
-    - "jq '.adnl_node.ip_address = \"0.0.0.0:{{ ton_node_adnl_port }}\"| .workchain = {{ escale_workchain }}' {{ ton_rnode_config_dir }}/config.json > {{ ton_rnode_config_dir }}/config_tmp.json"
+    - "jq '.adnl_node.ip_address = \"0.0.0.0:{{ ton_node_adnl_port }}\"' {{ ton_rnode_config_dir }}/config.json > {{ ton_rnode_config_dir }}/config_tmp.json"
     - "jq '.control_server.address = \"127.0.0.1:{{ ton_node_console_port }}\"' {{ ton_rnode_config_dir }}/config_tmp.json > {{ ton_rnode_config_dir }}/config.json"
     - "jq '.server_address = \"127.0.0.1:{{ ton_node_console_port }}\"' {{ ton_rnode_config_dir }}/console_config.json > {{ ton_rnode_config_dir }}/console_config_tmp.json"
     - 'cat {{ ton_rnode_config_dir }}/console_config_tmp.json > {{ ton_rnode_config_dir }}/console_config.json'

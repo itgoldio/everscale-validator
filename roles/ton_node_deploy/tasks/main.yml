@@ -45,7 +45,7 @@
     group: "{{ ton_node_group }}"
     mode: u=rwx,g=rx,o=
     remote_src: yes
-  when: ton_node_sources.changed or ton_node_sources_rfld.changed or ton_node_force_recompile
+  when: ton_node_sources.changed or ton_node_force_recompile
   notify: ton_systemd
 
 - name: Copy default ton rnode config

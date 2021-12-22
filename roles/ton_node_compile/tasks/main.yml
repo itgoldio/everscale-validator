@@ -85,7 +85,7 @@
     insertafter: '\[features\]'
     block:  |
       sha2-native = ['sha2/asm', 'ed25519-dalek/asm']
-  when: ton_node_config == "rfld"
+  when: ton_node_sha2_native_enabled
 
 - name:  Ton node add dependencies
   blockinfile: 
@@ -94,7 +94,7 @@
     insertafter: '\[dependencies\]'
     block:  |
       ed25519-dalek = '1.0'
-  when: ton_node_config == "rfld"
+  when: ton_node_sha2_native_enabled
 
 - name: Get ton node tools sources
   git:
@@ -128,7 +128,7 @@
     - name: Update repo deps for freeton node
       command: '{{ ansible_env.HOME }}/.cargo/bin/cargo update --manifest-path {{ ton_node_src_dir }}/ton_rnode/Cargo.toml'
     - name: Build repo | freeton node
-      command: '{{ ansible_env.HOME }}/.cargo/bin/cargo build --manifest-path {{ ton_node_src_dir }}/ton_rnode/Cargo.toml --target-dir {{ ton_node_src_dir }} --release{% if ton_node_metrics_enabled == true %} --features metrics{% endif %}{% if ton_node_compression_enabled == true %} --features compression{% endif %}{% if ton_node_external_db_enabled == true %} --features external_db{% endif %}'
+      command: '{{ ansible_env.HOME }}/.cargo/bin/cargo build --manifest-path {{ ton_node_src_dir }}/ton_rnode/Cargo.toml --target-dir {{ ton_node_src_dir }} --release{% if ton_node_metrics_enabled == true %} --features metrics{% endif %}{% if ton_node_compression_enabled == true %} --features compression{% endif %}{% if ton_node_external_db_enabled == true %} --features external_db{% endif %}{% if ton_node_sha2_native_enabled == true %} --features sha2-native{% endif %}'
   when: ton_node_sources.changed or ton_node_force_recompile
   environment:
     RUSTFLAGS: "{{ rust_flags }}"
