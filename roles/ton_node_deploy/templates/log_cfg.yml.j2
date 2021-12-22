@@ -34,16 +34,20 @@ root:
 loggers:
   # node messages
   ton_node:
-    level: warn
+    level: info
   boot:
-    level: off
+    level: info
   sync:
-    level: off
+    level: info
   telemetry:
     level: off
+  storage:
+    level: info
 
   # adnl messages
   adnl:
+    level: off
+  adnl_query:
     level: off
 
   overlay:
@@ -60,11 +64,11 @@ loggers:
 
   # block messages
   ton_block:
-    level: off
+    level: info
 
   # block messages
   executor:
-    level: off
+    level: info
 
   # tvm messages
   tvm:
@@ -80,7 +84,4 @@ loggers:
     level: off
 
   validator_session:
-    level: off
-
-  storage:
     level: off
