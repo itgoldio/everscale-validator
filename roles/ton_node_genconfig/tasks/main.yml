@@ -1,5 +1,12 @@
 ---
 
+- name: "Check if {{ ton_rnode_config_dir }} dir is empty"
+  find:
+    paths: "{{ ton_rnode_config_dir }}"
+    file_type: file
+    patterns: '*'
+  register: configDirNonEmpty
+
 - name: Delete old configs
   file:
     path: "{{ item }}"
@@ -8,6 +15,7 @@
     - "{{ ton_rnode_config_dir }}/config.json"
     - "{{ ton_rnode_config_dir }}/console.json"
     - "{{ ton_rnode_config_dir }}/console_config.json"
+  when: configDirNonEmpty is not defined and not configDirNonEmpty
 
 - name: Check TON user (if not exist)
   user:
@@ -21,7 +29,6 @@
 - name: Set home directory variable (if not exist)
   set_fact:
     ton_node_user_home: "{{ ton_user_created.home }}"
-
 
 - name: Create db dir
   file:
@@ -38,6 +45,7 @@
     owner: "{{ ton_node_user }}"
     group: "{{ ton_node_group }}"
     mode: u=rw,g=r,o=
+  when: configDirNonEmpty is not defined and not configDirNonEmpty
   notify: ton_systemd
 
 - name: Config tonos-cli
@@ -48,6 +56,7 @@
     - "./tonos-cli config endpoint reset"
     - "./tonos-cli config endpoint add {{ ton_node_global_config_URL_list[ton_node_config].DAPP_address }} {{ ton_node_global_config_URL_list[ton_node_config].DAPP_endpoints }}"
     - "./tonos-cli --url {{ ton_node_global_config_URL_list[ton_node_config].DAPP_address }} config"
+  when: configDirNonEmpty is not defined and not configDirNonEmpty
 
 - name: Copy tonos-cli.conf.json to configs dir
   copy:
@@ -57,6 +66,7 @@
     group: "{{ ton_node_group }}"
     mode: u=rw,g=r,o=
     remote_src: yes
+  when: configDirNonEmpty is not defined and not configDirNonEmpty
 
 - name: "Set lifetime to 600"
   shell: "{{ item }}"
@@ -65,6 +75,7 @@
   loop:
     - 'jq ".config.lifetime=600" "{{ ton_rnode_config_dir }}/tonos-cli.conf.json" > {{ ton_rnode_config_dir }}/tonos-cli.conf_tmp.json'
     - 'cat {{ ton_rnode_config_dir }}/tonos-cli.conf_tmp.json > {{ ton_rnode_config_dir }}/tonos-cli.conf.json'
+  when: configDirNonEmpty is not defined and not configDirNonEmpty
 
 - name: Remove tonos-cli.conf.json in tools dir
   file:
@@ -81,6 +92,7 @@
     #creates: "{{ ton_rnode_config_dir }}/{{ ansible_hostname }}_client_keys.json"
   become: yes
   become_user: "{{ ton_node_user }}"
+  when: configDirNonEmpty is not defined and not configDirNonEmpty
 
 - name: Generate ton_node key config (RUST)
   shell: "{{ ton_node_bin_dir }}/ton_node --configs {{ ton_rnode_config_dir }} --ckey \"$(jq -c .public {{ ton_rnode_config_dir }}/{{ ansible_hostname }}_client_keys.json)\" &"
@@ -91,11 +103,12 @@
   become: yes
   become_user: "{{ ton_node_user }}"
   register: ton_node_key_generated
+  when: configDirNonEmpty is not defined and not configDirNonEmpty
 
 - name: Wait for console_config.json creation (RUST)
   wait_for:
     path: "{{ ton_rnode_config_dir }}/console_config.json"
-  when: ton_node_key_generated.changed
+  when: ton_node_key_generated.changed and configDirNonEmpty is not defined and not configDirNonEmpty
 
 - name: Kill nohup ton_node processes
   shell: "kill -9 `jobs -l | awk '{print $2}'`"
@@ -113,6 +126,7 @@
     - "jq '.control_server.address = \"127.0.0.1:{{ ton_node_console_port }}\"' {{ ton_rnode_config_dir }}/config_tmp.json > {{ ton_rnode_config_dir }}/config.json"
     - "jq '.server_address = \"127.0.0.1:{{ ton_node_console_port }}\"' {{ ton_rnode_config_dir }}/console_config.json > {{ ton_rnode_config_dir }}/console_config_tmp.json"
     - 'cat {{ ton_rnode_config_dir }}/console_config_tmp.json > {{ ton_rnode_config_dir }}/console_config.json'
+  when: configDirNonEmpty is not defined and not configDirNonEmpty
 
 - name: Copy console_template.json (RUST)
   copy:
@@ -122,6 +136,7 @@
     owner: "{{ ton_node_user }}"
     group: "{{ ton_node_group }}"
     mode: u=rw,g=r,o=
+  when: configDirNonEmpty is not defined and not configDirNonEmpty
 
 - name: Generate console.json config (RUST)
   shell: "{{ item }}"
@@ -132,6 +147,7 @@
   loop:
     - "jq \".config = $(cat {{ ton_rnode_config_dir }}/console_config.json)\" {{ ton_rnode_config_dir }}/console_template.json > {{ ton_rnode_config_dir }}/console_tmp.json"
     - "jq \".config.client_key = $(jq .private {{ ton_rnode_config_dir }}/{{ ansible_hostname }}_client_keys.json)\" {{ ton_rnode_config_dir }}/console_tmp.json > {{ ton_rnode_config_dir }}/console.json"
+  when: configDirNonEmpty is not defined and not configDirNonEmpty
 
 - name: Delete temp file (RUST)
   file:
@@ -154,6 +170,7 @@
     - "{{ ton_rnode_config_dir }}/{{ ansible_hostname }}_client_keys.json"
     - "{{ ton_rnode_config_dir }}/config.json"
     - "{{ ton_rnode_config_dir }}/console.json"
+  when: configDirNonEmpty is not defined and not configDirNonEmpty
 
 - name: Firewall block
   block:
@@ -179,15 +196,6 @@
   template:
     src: "env.sh.j2"
     dest: "{{ ton_node_scripts }}/env.sh"
-    owner: "{{ ton_node_user }}"
-    group: "{{ ton_node_group }}"
-    mode: u=rwx,g=rx,o=
-  when: ton_custler_scripts_enabled
-
-- name: Making Custler scripts env local file
-  template:
-    src: "env_local.sh.j2"
-    dest: "{{ ton_node_scripts }}/env_local.sh"
     owner: "{{ ton_node_user }}"
     group: "{{ ton_node_group }}"
     mode: u=rwx,g=rx,o=

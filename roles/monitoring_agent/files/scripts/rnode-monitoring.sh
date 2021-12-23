@@ -5,8 +5,6 @@
 # https://github.com/itgoldio
 
 
-source ton-env.sh
-
 ### vars
 # states for exit codes
 STATE_OK=0              # define the exit code if status is OK
@@ -15,6 +13,9 @@ STATE_CRITICAL=2        # define the exit code if status is Critical
 STATE_UNKNOWN=3         # define the exit code if status is Unknown
 
 getScriptDir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)
+cd $getScriptDir
+
+source ton-env.sh
 
 # utils
 bcBin=$( which bc )
