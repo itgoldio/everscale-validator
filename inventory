@@ -2,7 +2,6 @@
 [ton_node]
 127.0.0.1 ansible_connection=local
 
-
 [monitoring_server]
 127.0.0.1 ansible_connection=local
 # Connection settings

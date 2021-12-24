@@ -57,19 +57,3 @@
     mode: u=rwx,g=rx,o=
     owner: "{{ ton_node_user }}"
     group: "{{ ton_node_group }}"
-
-- name: Copy Custler scripts
-  copy:
-    remote_src: true
-    src: "{{ ton_node_src_dir }}/custler.uninode/scripts/"
-    dest: "{{ ton_node_scripts }}/"
-    mode: preserve 
-    owner: "{{ ton_node_user }}"
-    group: "{{ ton_node_group }}"
-  when: ton_custler_scripts_enabled
-
-- name: Set executable for Custler scripts
-  file:
-    path: "{{ ton_node_scripts }}/"
-    mode: "u+rwx,g+rx,o-rwx"
-  when: ton_custler_scripts_enabled

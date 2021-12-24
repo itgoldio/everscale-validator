@@ -1,0 +1,17 @@
+scale=3
+
+define trunc(x) {
+  auto old, tmp
+  old=scale; scale=0; tmp=x/1; scale=old
+  return tmp
+}
+
+define fp(bits, x) {
+  auto i
+  if (x < 0) return -fp(bits, -x);
+  if (x == 0) return 0;
+  i=bits
+  while (x < 1) { x*=2; i+=1; }
+  while (x >= 2) { x/=2; i-=1; }
+  return trunc(x * 2^bits + 0.5) / 2^(i)
+}
