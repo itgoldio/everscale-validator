@@ -54,8 +54,24 @@ usage() {
   exit $STATE_UNKNOWN
 }
 
+
+getTonosCliVersion() {
+  $TON_CLI --version | grep tonos_cli | awk '{print $2}' 
+}
+
+getRNodeVersion() {
+  $RNODE_BIN --version | grep version | awk '{print $4}'
+}
+
 getDePoolBalance() {
-  myRes=$( $TON_CLI -j -c $TON_CLI_CONFIG account $DEPOOL_ADDR | jq -r ".balance" )
+
+  versionAsNumber=$( $( getTonosCliVersion) | sed 's/\.//g' )
+  if [[ $versionAsNumber -le 0246 ]]
+  then
+    myRes=$( $TON_CLI -j -c $TON_CLI_CONFIG account $DEPOOL_ADDR | jq -r ".balance" )
+  else
+    myRes=$( $TON_CLI -j -c $TON_CLI_CONFIG account $DEPOOL_ADDR | jq -r ".[].balance" )
+  fi
   [[ -n $myRes ]] && echo $myRes || echo ""
 }
 
@@ -120,6 +136,16 @@ getElectorAddr(){
     myRes=$( $TON_CONSOLE -j -C $TON_CONSOLE_CONFIG -c "getconfig 1" | jq -r '.p1' )
     [[ -n $myRes ]] && echo "-1:${myRes}" || echo ""
   fi
+}
+
+getCurrentElectionsID() {
+  # Ровно до тех пор пока мы едем в мейне на фифте
+  # fift
+  myRes=$( $TON_CLI -j -c $TON_CLI_CONFIG runget $( getElectorAddr ) active_election_id | jq -r ".value0" )
+  [[ -n $myRes ]] && echo "${myRes}" || echo ""
+  # solidity
+  # myRes=$( $TON_CLI -j run $( getElectorAddr ) active_election_id '{}' --abi ${Elector_ABI} | jq -r '.value0')
+  # [[ -n $myRes ]] && echo "${myRes}" || echo ""
 }
 
 getAccountBalance() {
