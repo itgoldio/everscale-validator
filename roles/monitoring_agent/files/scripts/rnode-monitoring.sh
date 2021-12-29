@@ -56,7 +56,7 @@ usage() {
 
 
 getTonosCliVersion() {
-  $TON_CLI --version | grep tonos_cli | awk '{print $2}' 
+  $TON_CLI --version | grep tonos_cli | awk '{print $2}'
 }
 
 getRNodeVersion() {
@@ -65,7 +65,7 @@ getRNodeVersion() {
 
 getDePoolBalance() {
 
-  versionAsNumber=$( $( getTonosCliVersion) | sed 's/\.//g' )
+  versionAsNumber=$( echo "$( getTonosCliVersion)" | sed 's/\.//g' )
   if [[ $versionAsNumber -le 0246 ]]
   then
     myRes=$( $TON_CLI -j -c $TON_CLI_CONFIG account $DEPOOL_ADDR | jq -r ".balance" )
