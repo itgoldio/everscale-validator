@@ -117,8 +117,8 @@ ton_smartcontracts_github_commit_id: "master"
 
 ton_node_additional_contracts:
   - https://github.com/FreeTON-Network/fld.ton.dev/raw/main/scripts/Marvin.abi.json
-  - https://raw.githubusercontent.com/tonlabs/rustnet.ton.dev/mainnet/docker-compose/ton-node/configs/Elector.abi.json
-
+  # - https://raw.githubusercontent.com/tonlabs/rustnet.ton.dev/mainnet/docker-compose/ton-node/configs/Elector.abi.json
+  - https://raw.githubusercontent.com/tonlabs/rustnet.ton.dev/main/docker-compose/ton-node/configs/Elector.abi.json
 
 ###
 # Custler's env
