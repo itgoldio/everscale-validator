@@ -66,6 +66,15 @@
     group: "{{ ton_node_group }}"
     mode: u=rw,g=r,o=
 
+- name: Get ton global config 
+  get_url:
+    url: "{{ ton_node_global_config_URL_list[ton_node_config].config_URL }}"
+    dest: "{{ ton_rnode_config_dir }}"
+    owner: "{{ ton_node_user }}"
+    group: "{{ ton_node_group }}"
+    mode: u=rw,g=r,o=
+  notify: ton_systemd
+
 - name: Copy ton systemd service environment variables
   copy:
     src: ton.env.conf
@@ -109,6 +118,7 @@
     mode: u=rwx,g=rx,o=
     owner: "{{ ton_node_user }}"
     group: "{{ ton_node_group }}"
+  when: ton_node_config == "rfld"
 
 - name: Copy additional smart contracts
   get_url:
