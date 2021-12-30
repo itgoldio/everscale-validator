@@ -320,8 +320,8 @@ getCurrentADNL() {
   else
     currElectionsID=$(( elections0 < elections1 ? elections0 : elections1 ))
     nextElectionsID=$(( elections0 > elections1 ? elections0 : elections1 ))
-    currADNLKey=$( echo $allKeysFromConfig | jq -r ".[]|select(.election_id == $currElectionsID)|.validator_adnl_key_id" | base64 -d|od -t xC -An|tr -d '\n' | tr -d ' ' )
-    nextADNLKey=$( echo $allKeysFromConfig | jq -r ".[]|select(.election_id == $nextElectionsID)|.validator_adnl_key_id" | base64 -d|od -t xC -An|tr -d '\n' | tr -d ' ' )
+    currADNLKey=$( echo $allKeysFromConfig | jq -r ".[]|select(.election_id == $currElectionsID)|.validator_adnl_key_id" | base64 -d | od -t xC -An | tr -d '\n' | tr -d ' ' )
+    nextADNLKey=$( echo $allKeysFromConfig | jq -r ".[]|select(.election_id == $nextElectionsID)|.validator_adnl_key_id" | base64 -d | od -t xC -An | tr -d '\n' | tr -d ' ' )
   fi
   [[ -z "${adnlKey1}" || "${adnlKey1}" == "null" ]] && echo "${currADNLKey} ${currElectionsID}" || echo "${currADNLKey} ${currElectionsID} ${nextADNLKey} ${nextElectionsID}"
 }
@@ -337,25 +337,27 @@ getP34Config() {
 }
 
 findInP34Config() {
-  isInP34=$( $( getP34Config ) | jq ".list[]|select(.adnl_addr == \"${1}\")" )
+  isInP34=$( echo "$( getP34Config )" | jq ".list[]|select(.adnl_addr == \"${1}\")" )
   if [[ -n $isInP34 ]]
   then
-    adnl="$( echo ${found} | jq -r .adnl_addr)"
-    pkey="$( echo ${found} | jq -r .public_key)"
-    wght="$( echo ${found} | jq -r .weight)"
+    adnl="$( echo ${isInP34} | jq -r .adnl_addr)"
+    pkey="$( echo ${isInP34} | jq -r .public_key)"
+    wght="$( echo ${isInP34} | jq -r .weight)"
     echo "${adnl} ${pkey} ${wght}"
   else
     echo "null"
   fi
-}
+} 
 
 findInP36Config() {
-  isInp36=$( $( getP36Config ) | jq ".list[]|select(.adnl_addr == \"${1}\")" )
+  myRes=$( getP36Config )
+  [[ $myRes == "null" ]] && echo "null" && return
+  isInp36=$( echo "$( getP36Config )" | jq ".list[]|select(.adnl_addr == \"${1}\")" )
   if [[ -n $isInp36 ]]
   then
-    adnl="$(echo ${found} | jq -r .adnl_addr )"
-    pkey="$(echo ${found} | jq -r .public_key )"
-    wght="$(echo ${found} | jq -r .weight_dec )"
+    adnl="$(echo ${isInp36} | jq -r .adnl_addr )"
+    pkey="$(echo ${isInp36} | jq -r .public_key )"
+    wght="$(echo ${isInp36} | jq -r .weight_dec )"
     echo "${adnl} ${pkey} ${wght}"
   else
     echo "null"
@@ -389,97 +391,117 @@ isValidatorInElector() {
   echo "$stake $time $max_factor $addr"
 }
 
-partCheck() {
-##################################################################################################
-electionsID=$( getCurrentElectionsID )
-echo "INFO: Elections ID:      $electionsID"
-echo "INFO: DePool Address:    $DEPOOL_ADDR"
-echo "INFO: Validator Address: $VALIDATOR_WALLET_ADDR"
+# partCheck() {
+# electionsID=$( getCurrentElectionsID )
 
-ADNLInfo=$( getCurrentADNL )
-if [[ "${ADNLInfo}" == "null" ]]
-then
-  echo "+++-WARNING You have not participated in any elections yet!"
-  exit 0
-fi
+# echo "Elections ID: $electionsID ( $( date -d@${electionsID} "+%F %T" ) ) DePool: $DEPOOL_ADDR Validator Wallet: $VALIDATOR_WALLET_ADDR"
 
-ADNL_KEY="$1"
-######
-if [[ "${electionsID}" -eq 0 ]]
-then
-    currADNLKey=$( echo $ADNLInfo | awk '{print $3}' )
-    [[ -z $currADNLKey ]] && currADNLKey=$( echo $ADNLInfo | awk '{print $1}' )
-    ADNL_KEY=${ADNL_KEY:=$currADNLKey}
-    echo "INFO: Validator ADNL:    $ADNL_KEY"
+# ADNLInfo=$( getCurrentADNL )
 
-    CurOrNextMSG="NEXT"
-    date +"INFO: %F %T No current elections"
-    Part_VAL=$( findInP36Config $ADNL_KEY )
-    if [[ "${Part_VAL}" == "null" ]]
-    then
-      Part_VAL=$( findInP34Config $ADNL_KEY )
-      CurOrNextMSG="CURRENT"
-    fi
-    
-    FOUND_PUB_KEY=$( echo "$Part_VAL" | awk '{print $1}' )
-    if [[ "$FOUND_PUB_KEY" == "absent" ]]
-    then
-        echo "###-ERROR: Your ADNL Key NOT FOUND in current or next validators list!!!"
-        # for icinga
-        echo "ERROR ADNL NOT FOUND IN P34 OR P36 CONFIG" > "${nodeStats}"
-        exit 1
-    fi
+# [[ "${ADNLInfo}" == "null" ]] && echo "Validator never elected yet" && exit $STATE_UNKNOWN
 
-    VAL_WEIGHT=$( echo "$Part_VAL" | awk '{print $2}' )
-    echo
-    CALL_BC=$( which bc )
-    if [[ ! -f $CALL_BC ]]
-    then 
-      echo "INFO: Found you in $CurOrNextMSG validators with weight $(echo "scale=3; ${VAL_WEIGHT} / 10000000000000000" | $CALL_BC)%"
-    else
-      echo "INFO: Found you in $CurOrNextMSG validators with weight ${VAL_WEIGHT}"
-    fi
-    echo "INFO: Your public key: $FOUND_PUB_KEY"
-    echo "INFO: Your   ADNL key: $(echo "$ADNL_KEY" | tr "[:upper:]" "[:lower:]")"
-    echo "-----------------------------------------------------------------------------------------------------"
-    echo
-fi
+# if [[ "${electionsID}" -eq 0 ]]
+# then
+#   currADNLKey=$( echo $ADNLInfo | awk '{print $3}' )
+#   [[ -z $currADNLKey ]] && currADNLKey=$( echo $ADNLInfo | awk '{print $1}' )
+#   ADNL_KEY=${ADNL_KEY:=$currADNLKey}
+#   echo "Validator ADNL: $ADNL_KEY"
 
-Next_ADNL_Key=;( echo $ADNLInfo | awk '{print $3}' )
-[[ -z $Next_ADNL_Key ]] && Next_ADNL_Key=$( echo $ADNLInfo|awk '{print $1}' )
-ADNL_KEY=${ADNL_KEY:=$Next_ADNL_Key}
-echo "INFO: Validator ADNL:    $ADNL_KEY"
-echo
-echo "Now is $(date +'%F %T %Z')"
-# new_val_round_date="$(echo "$electionsID" | gawk '{print strftime("%Y-%m-%d %H:%M:%S", $1)}')"
-new_val_round_date=$( date -d@"$electionsID" "+%F %T" )
+#   searchedADNL=$( findInP36Config $ADNL_KEY )
+#   [[ "${searchedADNL}" == "null" ]] &&  searchedADNL=$( findInP34Config $ADNL_KEY ) &&  CurOrNextMSG="CURRENT" || CurOrNextMSG="NEXT"
+  
+#   validatorPubKey=$( echo "$searchedADNL" | awk '{print $1}' )
+#   [[ "$validatorPubKey" == "absent" ]] && echo "###-ERROR: Your ADNL Key NOT FOUND in current or next validators list!!!" && exit 1
 
-ADNL_FOUND=$( isValidatorInElector $ADNL_KEY )
-if [[ "$ADNL_FOUND" == "absent" ]];then
-    echo -e "${Tg_SOS_sign}###-ERROR: Can't find you in participant list in Elector. account: ${Depool_addr}"
-    exit 1
-fi
+#   validatorWeight=$( echo "$searchedADNL" | awk '{print $2}' )
+#   bcBin=$( which bc )
+#   [[ ! -f $bcBin ]] && echo "WEIGHT BY BCFound you in $CurOrNextMSG validators with weight $(echo "scale=3; ${validatorWeight} / 10000000000000000" | $bcBin)%" || echo "WEIGHT WIYHOUT BC Found you in $CurOrNextMSG validators with weight ${validatorWeight}"
+#   echo "Validator pub key: $validatorPubKey Your ADNL $(echo "$ADNL_KEY" | tr "[:upper:]" "[:lower:]") "
+# fi
 
-Your_Stake=$( echo "${ADNL_FOUND}" | awk '{print $1 / 1000000000}' )
-You_PubKey=$( echo "${ADNL_FOUND}" | awk '{print $4}' )
+# Next_ADNL_Key=$( echo $ADNLInfo | awk '{print $3}' )
+# [[ -z $Next_ADNL_Key ]] && Next_ADNL_Key=$( echo $ADNLInfo | awk '{print $1}' )
+# ADNL_KEY=${ADNL_KEY:=$Next_ADNL_Key}
 
-echo "---INFO: Your stake: $Your_Stake with ADNL: $(echo "$ADNL_KEY" | tr "[:upper:]" "[:lower:]")"
-echo "You public key in Elector: $You_PubKey"
-echo "You will start validate from $(TD_unix2human ${electionsID})"
+# ADNL_FOUND=$( isValidatorInElector $ADNL_KEY )
+# [[ "$ADNL_FOUND" == "absent" ]] && echo "SEND TO TLG ###-ERROR: Can't find you in participant list in Elector. account: ${Depool_addr}" && exit 1 || echo "Found in Elector ADNL $ADNL_FOUND"
 
-echo $electionsID > ${ELECTIONS_WORK_DIR}/curent_electionsID.txt
+# Your_Stake=$( echo "${ADNL_FOUND}" | awk '{print $1 / 1000000000}' )
+# You_PubKey=$( echo "${ADNL_FOUND}" | awk '{print $4}' )
+
+# echo "stake= $( echo "${ADNL_FOUND}" | awk '{print $1 / 1000000000}' )  You_PubKey $( echo "${ADNL_FOUND}" | awk '{print $4}' )
+# adnl_found is ${ADNL_FOUND}
+
+# "
+
+
+# echo "Stake: $Your_Stake ADNL: $( echo "$ADNL_KEY" | tr "[:upper:]" "[:lower:]" ) You public key in Elector: $You_PubKey You will start validate from $( date -d@${electionsID} "+%F %T" )"
+
+# echo "
+# ==
+# getCurrentADNL is $( getCurrentADNL )
+# ==
+# "
+
+# echo $electionsID > ${ELECTIONS_WORK_DIR}/curent_electionsID.txt
 # for icinga
-echo "INFO
-ELECTION ID ${electionsID} ;
-DEPOOL ADDRESS $Depool_addr ;
-VALIDATOR ADDRESS $Validator_addr ;
-STAKE $Your_Stake ;
-ADNL ${ADNL_KEY} ;
-KEY IN ELECTOR $You_PubKey ;
-"
+# echo "INFO
+# ELECTION ID ${electionsID} ;
+# DEPOOL ADDRESS $Depool_addr ;
+# VALIDATOR ADDRESS $Validator_addr ;
+# STAKE $Your_Stake ;
+# ADNL ${ADNL_KEY} ;
+# KEY IN ELECTOR $You_PubKey ;  
+# "
+# }
+
+calcWeight() {
+  bcBin=$( which bc )
+  weight=${1}
+  [[ "${weight}" == "null" || -z "${weight}" ]] && weight=0
+  if [[ -e ${bcBin} ]]
+  then
+    echo "$( $bcBin -lq <<< "scale=3; ${weight} / 10000000000000000" )"
+  else
+    echo "${1}"
+  fi
 }
 
+partCheck() {
+  getADNLInfo=$( getCurrentADNL )
+  [[ "${getADNLInfo}" == "null" ]] && echo "Validator never elected yet\n" && exit $STATE_UNKNOWN
+  electionsID=$( getCurrentElectionsID )
+  [[ "${electionsID}" -eq 0 ]] && myMSG="There is no election period\n" || myMSG="ElectionsID $electionsID, started at $( date -d@${electionsID} "+%F %T" )\n"
 
-echo "partCheck here"
-partCheck
+  currADNL=$( echo ${getADNLInfo} | awk '{print $1}' )
+  isNextADNLReady=$( echo ${getADNLInfo} | awk '{print $3}' )
+  if [[ -z $isNextADNLReady ]]
+  then  
+    myMSG="${myMSG}Current ADNL $currADNL \nNext ADNL EMPTY\n"
+  else
+    myMSG="${myMSG}Current ADNL $currADNL \nNext ADNL $( echo ${getADNLInfo} | awk '{print $3}' )\n"
+  fi
 
+  # search nextadnl
+  searchedADNL=$( findInP36Config $isNextADNLReady )
+  [[ "${searchedADNL}" != "null" ]] && myMSG="${myMSG}P36: ADNL: $( echo ${searchedADNL} | awk '{print $1}' ) PubKey: $( echo ${searchedADNL} | awk '{print $2}' ) Weight: $( echo ${searchedADNL} | awk '{print $3}' | calcWeight ) \n"
+  searchedADNL=$( findInP34Config $isNextADNLReady )
+  [[ "${searchedADNL}" != "null" ]] && myMSG="${myMSG}P34: ADNL: $( echo ${searchedADNL} | awk '{print $1}' ) PubKey: $( echo ${searchedADNL} | awk '{print $2}' ) Weight: $( echo ${searchedADNL} | awk '{print $3}' | calcWeight ) \n"
+
+  # search curradnl
+  searchedADNL=$( findInP36Config $currADNL )
+  [[ "${searchedADNL}" != "null" ]] && myMSG="${myMSG}P36 ADNL: $( echo ${searchedADNL} | awk '{print $1}' ) PubKey: $( echo ${searchedADNL} | awk '{print $2}' ) Weight: $( echo ${searchedADNL} | awk '{print $3}' | calcWeight ) \n"
+  searchedADNL=$( findInP34Config $currADNL )
+  [[ "${searchedADNL}" != "null" ]] && myMSG="${myMSG}P34: ADNL: $( echo ${searchedADNL} | awk '{print $1}' ) PubKey: $( echo ${searchedADNL} | awk '{print $2}' ) Weight: $( echo ${searchedADNL} | awk '{print $3}' | calcWeight ) \n"
+
+  if [[ "${electionsID}" -eq 0 ]]
+  then
+    findNextADNLInElector=$( isValidatorInElector $isNextADNLReady )
+    [[ -n "${findNextADNLInElector}" && "${findNextADNLInElector}" != "null" ]] && myMSG="${myMSG}findNextADNLInElector is $findNextADNLInElector\n"
+
+    findcurrADNLInElector=$( isValidatorInElector $currADNL )
+    [[ -n "${findcurrADNLInElector}" && "${findNextADNLInElector}" != "null" ]] && myMSG="${myMSG}findCurrADNLInElector is $findcurrADNLInElector\n"
+  fi
+
+  echo -e "GRAND TOTAL:\n${myMSG}\n"
+}
