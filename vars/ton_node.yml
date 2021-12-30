@@ -28,18 +28,18 @@ ton_node_global_config_URL_list:
   rfld:
     config_URL: "https://raw.githubusercontent.com/FreeTON-Network/custler.uninode/main/configs/rfld.ton.dev/ton-global.config.json"
     DAPP_address: "https://rfld.ton.dev"
-    DAPP_endpoints: "https://rfld-dapp01.ds1.itgold.io,https://rfld-dapp02.am2.itgold.io"
+    DAPP_endpoints: "https://rfld-dapp01.ds1.itgold.io"
 
 # Get freeton node commit id: https://github.com/tonlabs/ton-labs-node/commits
 ton_node_github_repo: "https://github.com/tonlabs/ton-labs-node.git"
-ton_node_github_commit_id: "b7702c1504e8a8a9f8231fa794043de29f4375ae"
+ton_node_github_commit_id: "master"
 
 # Recompile binary without sources changes: false|true
 ton_node_force_recompile: true
 
 # Get freeton node tools commit id: https://github.com/tonlabs/ton-labs-node-tools/commits"
 ton_node_tools_github_repo: "https://github.com/tonlabs/ton-labs-node-tools.git"
-ton_node_tools_github_commit_id: "183bb2a777db5c1e3186d26904dfcc3d8bb9a1b5"
+ton_node_tools_github_commit_id: "master"
 
 # Recompile binary without sources changes: false|true
 ton_node_tools_force_recompile: true
@@ -53,7 +53,7 @@ tonos_cli_force_recompile: true
 
 # Get TVM linker commit id: https://github.com/tonlabs/TVM-linker/commits"
 tvm_linker_github_repo: "https://github.com/tonlabs/TVM-linker.git"
-tvm_linker_github_commit_id: "0.14.2"
+tvm_linker_github_commit_id: "master"
 
 # Recompile binary without sources changes: false|true
 tvm_linker_force_recompile: true
@@ -117,8 +117,8 @@ ton_smartcontracts_github_commit_id: "master"
 
 ton_node_additional_contracts:
   - https://github.com/FreeTON-Network/fld.ton.dev/raw/main/scripts/Marvin.abi.json
-  - https://raw.githubusercontent.com/tonlabs/rustnet.ton.dev/mainnet/docker-compose/ton-node/configs/Elector.abi.json
-
+  # - https://raw.githubusercontent.com/tonlabs/rustnet.ton.dev/mainnet/docker-compose/ton-node/configs/Elector.abi.json
+  - https://raw.githubusercontent.com/tonlabs/rustnet.ton.dev/main/docker-compose/ton-node/configs/Elector.abi.json
 
 ###
 # Custler's env
