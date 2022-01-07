@@ -162,6 +162,7 @@ isValidatingNow() {
       echo "Current validator exist in P34 ( check via console: $myRes )"
       exit $STATE_OK
     elif [[ "$myRes" == "false" ]]
+    then
       echo "Current validator not in P34 ( check via console: $myRes )"
       exit $STATE_CRITICAL
     fi
