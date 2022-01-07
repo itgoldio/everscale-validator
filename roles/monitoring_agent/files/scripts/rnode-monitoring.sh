@@ -155,7 +155,14 @@ getAccountBalance() {
 
 isValidatingNow() {
   myRes=$( $TON_CONSOLE -j -C $TON_CONSOLE_CONFIG -c "getstats" | jq -r ".in_current_vset_p34" )
-  [[ -n $myRes ]] && echo $myRes || echo ""
+  if [[ -n $myRes ]]
+  then
+    echo "Current validator exist in P34 ( check via console: $myRes )"
+    exit $STATE_OK
+  else
+    echo "Current validator not in P34 ( check via console: $myRes )"
+    exit $STATE_CRITICAL
+  fi
 }
 
 isValidatingNext() {
