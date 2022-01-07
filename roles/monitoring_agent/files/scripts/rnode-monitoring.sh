@@ -157,11 +157,17 @@ isValidatingNow() {
   myRes=$( $TON_CONSOLE -j -C $TON_CONSOLE_CONFIG -c "getstats" | jq -r ".in_current_vset_p34" )
   if [[ -n $myRes ]]
   then
-    echo "Current validator exist in P34 ( check via console: $myRes )"
-    exit $STATE_OK
+    if [[ "$myRes" == "true" ]]
+    then
+      echo "Current validator exist in P34 ( check via console: $myRes )"
+      exit $STATE_OK
+    elif [[ "$myRes" == "false" ]]
+      echo "Current validator not in P34 ( check via console: $myRes )"
+      exit $STATE_CRITICAL
+    fi
   else
-    echo "Current validator not in P34 ( check via console: $myRes )"
-    exit $STATE_CRITICAL
+    echo "Console return error output. Can not parse"
+    exit $STATE_UNKNOWN
   fi
 }
 
