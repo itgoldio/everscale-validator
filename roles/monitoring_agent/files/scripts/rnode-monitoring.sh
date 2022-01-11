@@ -473,6 +473,9 @@ then
 elif [[ "${typeCheck}" == "isValidatingNext" ]]
 then
   isValidatingNext
+elif [[ "${typeCheck}" == "partCheck" ]]
+then
+  partCheck
 elif [[ -n "${typeCheck}" && -n "${warnValue}" && -n "${critValue}" ]]
 then
   while true
