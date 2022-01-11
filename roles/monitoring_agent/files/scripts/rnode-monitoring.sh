@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# ilya.vasilev@itglobal.com, 2021
+# ilya.vasilev@itglobal.com, 2021, 2022
 # https://itgold.io
 # https://github.com/itgoldio
 
@@ -17,6 +17,9 @@ cd $getScriptDir
 
 source ton-env.sh
 
+Depool_addr=$DEPOOL_ADDR
+Validator_addr=$VALIDATOR_WALLET_ADDR
+
 # utils
 bcBin=$( which bc )
 bcArgs=" -ql "
@@ -30,7 +33,7 @@ tailLines=100
 headBin=$( which head )
 divideValue=1000000000
 
-version="0.6.0"
+version="0.7.0"
 
 # show usage/help info and exit
 usage() {
@@ -44,6 +47,7 @@ usage() {
     These checks calls without -w and -c params:
           isValidatingNow
           isValidatingNext
+          partCheck
 
     These checks requires warning and critical param:
           dePoolBalance
@@ -54,6 +58,9 @@ usage() {
   exit $STATE_UNKNOWN
 }
 
+getConsoleVersion() {
+  $TON_CONSOLE --version | awk '{print $2}'
+}
 
 getTonosCliVersion() {
   $TON_CLI --version | grep tonos_cli | awk '{print $2}'
@@ -64,7 +71,6 @@ getRNodeVersion() {
 }
 
 getDePoolBalance() {
-
   versionAsNumber=$( echo "$( getTonosCliVersion)" | sed 's/\.//g' )
   if [[ $versionAsNumber -le 0246 ]]
   then
@@ -129,7 +135,7 @@ checkStatus() {
   fi
 }
 
-getElectorAddr(){
+getElectorAddr() {
   $TON_CONSOLE -j -C $TON_CONSOLE_CONFIG -c 'getconfig 1' | grep -iq error
   if [[ $? -ne 0 ]]
   then
@@ -233,90 +239,26 @@ getTimeDiff() {
   fi
 }
 
-### main script
-
-if [ -z "${1}" ]
-then
-  usage
-fi
-
-while getopts ":w:c:t:hC:" myArgs
-do
-  case ${myArgs} in
-    w) warnValue=${OPTARG} ;;
-    c) critValue=${OPTARG} ;;
-    t) typeCheck=${OPTARG} ;;
-    C) configFile=${OPTARG} ;;
-    h) usage ;;
-    \?)  echo "Wrong option given. Check help ( $0 -h ) for usage."
-        exit $STATE_UNKNOWN
-        ;;
-  esac
-done
-
-if [[ "${typeCheck}" == "isValidatingNow" ]]
-then
-  isValidatingNow
-elif [[ "${typeCheck}" == "isValidatingNext" ]]
-then
-  isValidatingNext
-elif [[ -n "${typeCheck}" && -n "${warnValue}" && -n "${critValue}" ]]
-then
-  while true
-  do
-    case "$typeCheck" in
-      timeDiff ) getTimeDiff "${warnValue}" "${critValue}" ;;
-      walletBalance )
-        checkStatus walletBalance "${warnValue}" "${critValue}" $( "${tonScriptsDir}""${walletBalanceScript}" ) ;;
-      dePoolBalance )
-        checkStatus dePoolBalance "${warnValue}" "${critValue}" ;;
-      proxy1balance )
-        checkStatus proxy1balance "${warnValue}" "${critValue}" $( "${tonScriptsDir}""${depoolproxy1BalanceScript}" 2>/dev/null ) ;;
-      proxy2balance )
-        checkStatus proxy2balance "${warnValue}" "${critValue}" $( "${tonScriptsDir}""${depoolproxy2BalanceScript}" 2>/dev/null ) ;;
-      tickTokBalance )
-        checkStatus tickTokBalance "${warnValue}" "${critValue}" $( "${tonScriptsDir}""${tickTokBalanceScript}" ) ;;
-      * )
-        usage
-        exit ${STATE_UNKNOWN}
-        ;;
-    esac
-  done
-else
-  echo -e "Missing required parameter or parameters"
-  usage
-  exit ${STATE_UNKNOWN}
-fi
-
-
-exit 0
-
-#!/usr/bin/env bash
-
-source ton-env.sh
-
-# =====================================================
-Depool_addr=$DEPOOL_ADDR
-Validator_addr=$VALIDATOR_WALLET_ADDR
-
-# =====================================================
-getElectorAddr(){
-  $TON_CONSOLE -j -C $TON_CONSOLE_CONFIG -c 'getconfig 1' | grep -iq error
-  if [[ $? -ne 0 ]]
+calcWeight() {
+  weight=${1}
+  [[ "${weight}" == "null" || -z "${weight}" ]] && weight=0
+  if [[ -e ${bcBin} ]]
   then
-    myRes=$( $TON_CONSOLE -j -C $TON_CONSOLE_CONFIG -c "getconfig 1" | jq -r '.p1' )
-    [[ -n $myRes ]] && echo "-1:${myRes}" || echo ""
+    echo "$( $bcBin -lq <<< "scale=3; ${weight} / 10000000000000000" )"
+  else
+    echo "${1}"
   fi
 }
 
-getCurrentElectionsID() {
-  # Ровно до тех пор пока мы едем в мейне на фифте
-  # fift
-  myRes=$( $TON_CLI -j -c $TON_CLI_CONFIG runget $( getElectorAddr ) active_election_id | jq -r ".value0" )
-  [[ -n $myRes ]] && echo "${myRes}" || echo ""
-  # solidity
-  # myRes=$( $TON_CLI -j run $( getElectorAddr ) active_election_id '{}' --abi ${Elector_ABI} | jq -r '.value0')
-  # [[ -n $myRes ]] && echo "${myRes}" || echo ""
+calcStake() {
+  stake=${1}
+  [[ "${stake}" == "null" || -z "${stake}" ]] && stake=0
+  if [[ -e ${bcBin} ]]
+  then
+    echo "$( $bcBin -lq <<< "scale=3; ${stake} / 1000000000" )"
+  else
+    echo "${1}"
+  fi
 }
 
 getCurrentADNL() {
@@ -389,133 +331,174 @@ getElectionsFromElector() {
 }
 
 isValidatorInElector() {
-  ADNL="${1}"
-  allParticipantsFromElector=$( getParticipantListInElector )
+  myADNL=${1}
   isElectionsOnGoing=$( getElectionsFromElector )
   [[ $isElectionsOnGoing -eq 0 ]] && echo "null" && return
-  allParticipantsFromElector=$( echo "${allParticipantsFromElector}" | tr "]]" "\n" | tr '[' '\n' | awk 'NF > 0' | tr '","' ' ' )
-  isMyADNLPresent=$( echo "${allParticipantsFromElector}" | grep -i "0x${ADNL}" )
+  myRes=$( getParticipantListInElector )
+  validatorInfo=$( echo "${myRes}" | sed 's/] ],/]],\n/g' | grep ${myADNL} )
+  validatorInfo=$( echo "${validatorInfo}" | | sed -E 's/\[|\"|\]|\,//g' )
 
-  [[ -z $isMyADNLPresent ]] && echo "absent" && return
-
-  stake=$( echo "${isMyADNLPresent}" | awk '{print $1}' )
-  time=0
-  max_factor=$( echo "${isMyADNLPresent}" | awk '{print $2}' )
-  addr=$( echo "${allParticipantsFromElector}" | grep -B 1 "0x${ADNL}" | head -1 | cut -d 'x' -f 2 )
-  echo "$stake $time $max_factor $addr"
-}
-
-# partCheck() {
-# electionsID=$( getCurrentElectionsID )
-
-# echo "Elections ID: $electionsID ( $( date -d@${electionsID} "+%F %T" ) ) DePool: $DEPOOL_ADDR Validator Wallet: $VALIDATOR_WALLET_ADDR"
-
-# ADNLInfo=$( getCurrentADNL )
-
-# [[ "${ADNLInfo}" == "null" ]] && echo "Validator never elected yet" && exit $STATE_UNKNOWN
-
-# if [[ "${electionsID}" -eq 0 ]]
-# then
-#   currADNLKey=$( echo $ADNLInfo | awk '{print $3}' )
-#   [[ -z $currADNLKey ]] && currADNLKey=$( echo $ADNLInfo | awk '{print $1}' )
-#   ADNL_KEY=${ADNL_KEY:=$currADNLKey}
-#   echo "Validator ADNL: $ADNL_KEY"
-
-#   searchedADNL=$( findInP36Config $ADNL_KEY )
-#   [[ "${searchedADNL}" == "null" ]] &&  searchedADNL=$( findInP34Config $ADNL_KEY ) &&  CurOrNextMSG="CURRENT" || CurOrNextMSG="NEXT"
-  
-#   validatorPubKey=$( echo "$searchedADNL" | awk '{print $1}' )
-#   [[ "$validatorPubKey" == "absent" ]] && echo "###-ERROR: Your ADNL Key NOT FOUND in current or next validators list!!!" && exit 1
-
-#   validatorWeight=$( echo "$searchedADNL" | awk '{print $2}' )
-#   bcBin=$( which bc )
-#   [[ ! -f $bcBin ]] && echo "WEIGHT BY BCFound you in $CurOrNextMSG validators with weight $(echo "scale=3; ${validatorWeight} / 10000000000000000" | $bcBin)%" || echo "WEIGHT WIYHOUT BC Found you in $CurOrNextMSG validators with weight ${validatorWeight}"
-#   echo "Validator pub key: $validatorPubKey Your ADNL $(echo "$ADNL_KEY" | tr "[:upper:]" "[:lower:]") "
-# fi
-
-# Next_ADNL_Key=$( echo $ADNLInfo | awk '{print $3}' )
-# [[ -z $Next_ADNL_Key ]] && Next_ADNL_Key=$( echo $ADNLInfo | awk '{print $1}' )
-# ADNL_KEY=${ADNL_KEY:=$Next_ADNL_Key}
-
-# ADNL_FOUND=$( isValidatorInElector $ADNL_KEY )
-# [[ "$ADNL_FOUND" == "absent" ]] && echo "SEND TO TLG ###-ERROR: Can't find you in participant list in Elector. account: ${Depool_addr}" && exit 1 || echo "Found in Elector ADNL $ADNL_FOUND"
-
-# Your_Stake=$( echo "${ADNL_FOUND}" | awk '{print $1 / 1000000000}' )
-# You_PubKey=$( echo "${ADNL_FOUND}" | awk '{print $4}' )
-
-# echo "stake= $( echo "${ADNL_FOUND}" | awk '{print $1 / 1000000000}' )  You_PubKey $( echo "${ADNL_FOUND}" | awk '{print $4}' )
-# adnl_found is ${ADNL_FOUND}
-
-# "
-
-
-# echo "Stake: $Your_Stake ADNL: $( echo "$ADNL_KEY" | tr "[:upper:]" "[:lower:]" ) You public key in Elector: $You_PubKey You will start validate from $( date -d@${electionsID} "+%F %T" )"
-
-# echo "
-# ==
-# getCurrentADNL is $( getCurrentADNL )
-# ==
-# "
-
-# echo $electionsID > ${ELECTIONS_WORK_DIR}/curent_electionsID.txt
-# for icinga
-# echo "INFO
-# ELECTION ID ${electionsID} ;
-# DEPOOL ADDRESS $Depool_addr ;
-# VALIDATOR ADDRESS $Validator_addr ;
-# STAKE $Your_Stake ;
-# ADNL ${ADNL_KEY} ;
-# KEY IN ELECTOR $You_PubKey ;  
-# "
-# }
-
-calcWeight() {
-  bcBin=$( which bc )
-  weight=${1}
-  [[ "${weight}" == "null" || -z "${weight}" ]] && weight=0
-  if [[ -e ${bcBin} ]]
+  if [[ -n ${validatorInfo} ]]
   then
-    echo "$( $bcBin -lq <<< "scale=3; ${weight} / 10000000000000000" )"
+    validatorPublicKey=$( echo "${validatorInfo}" | awk '{print $1}' )
+    validatorStake=$( calcStake $( echo "${validatorInfo}" | awk '{print $2}' ) )
+    validatorMaxFactor=$( echo "${validatorInfo}" | awk '{print $3}' )
+    validatorProxyAddr=$( echo "${validatorInfo}" | awk '{print $4}' )
+    validatorADNLAddr=$( echo "${validatorInfo}" | awk '{print $5}' )
   else
-    echo "${1}"
+    echo "absent"
+    return
   fi
+  echo "PubKey: ${validatorPublicKey} Stake: ${validatorStake} MaxFactor: ${validatorMaxFactor} ProxyAddr: ${validatorProxyAddr} ADNL: ${validatorADNLAddr}"
 }
 
 partCheck() {
   getADNLInfo=$( getCurrentADNL )
-  [[ "${getADNLInfo}" == "null" ]] && echo "Validator never elected yet\n" && exit $STATE_UNKNOWN
+  [[ "${getADNLInfo}" == "null" ]] && echo "Validator never elected yet. ADNL is empty\n" && exit $STATE_UNKNOWN
   electionsID=$( getCurrentElectionsID )
-  [[ "${electionsID}" -eq 0 ]] && myMSG="There is no election period\n" || myMSG="ElectionsID $electionsID, started at $( date -d@${electionsID} "+%F %T" )\n"
+  if [[ "${electionsID}" -eq 0 ]]
+  then
+    myMSG="There is no election period\n"
+    flagElection=1
+  else
+    myMSG="ElectionsID $electionsID, validating round start at $( date -d@${electionsID} "+%F %T" )\n"
+    flagElection=0
+  fi
 
   currADNL=$( echo ${getADNLInfo} | awk '{print $1}' )
   isNextADNLReady=$( echo ${getADNLInfo} | awk '{print $3}' )
   if [[ -z $isNextADNLReady ]]
   then  
-    myMSG="${myMSG}Current ADNL $currADNL \nNext ADNL EMPTY\n"
+    errMSG="${errMSG}Current ADNL $currADNL Next ADNL EMPTY\n"
+    flagCurrADNL=1
   else
-    myMSG="${myMSG}Current ADNL $currADNL \nNext ADNL $( echo ${getADNLInfo} | awk '{print $3}' )\n"
+    myMSG="${myMSG}Current ADNL $currADNL Next ADNL $( echo ${getADNLInfo} | awk '{print $3}' )\n"
+    flagCurrADNL=0
   fi
 
   # search nextadnl
   searchedADNL=$( findInP36Config $isNextADNLReady )
-  [[ "${searchedADNL}" != "null" ]] && myMSG="${myMSG}P36: ADNL: $( echo ${searchedADNL} | awk '{print $1}' ) PubKey: $( echo ${searchedADNL} | awk '{print $2}' ) Weight: $( echo ${searchedADNL} | awk '{print $3}' | calcWeight ) \n"
+  if [[ "${searchedADNL}" != "null" ]]
+  then
+    myMSG="${myMSG}P36: ADNL: $( echo ${searchedADNL} | awk '{print $1}' ) PubKey: $( echo ${searchedADNL} | awk '{print $2}' ) Weight: $( calcWeight $( echo ${searchedADNL} | awk '{print $3}' ) ) \n"
+    flagP36Next=0
+  else
+    errMSG="${errMSG}P36: isNextADNLReady are EMPTY ( func return ${searchedADNL} )\n"
+    flagP36Next=1
+  fi
+
   searchedADNL=$( findInP34Config $isNextADNLReady )
-  [[ "${searchedADNL}" != "null" ]] && myMSG="${myMSG}P34: ADNL: $( echo ${searchedADNL} | awk '{print $1}' ) PubKey: $( echo ${searchedADNL} | awk '{print $2}' ) Weight: $( echo ${searchedADNL} | awk '{print $3}' | calcWeight ) \n"
+  if [[ "${searchedADNL}" != "null" ]]
+  then
+    myMSG="${myMSG}P34: ADNL: $( echo ${searchedADNL} | awk '{print $1}' ) PubKey: $( echo ${searchedADNL} | awk '{print $2}' ) Weight: $( calcWeight $( echo ${searchedADNL} | awk '{print $3}' ) ) \n"
+    flagP34Next=0
+  else
+    errMSG="${errMSG}P34: isNextADNLReady are EMPTY ( func return ${searchedADNL} )\n"
+    flagP34Next=1
+  fi
 
   # search curradnl
   searchedADNL=$( findInP36Config $currADNL )
-  [[ "${searchedADNL}" != "null" ]] && myMSG="${myMSG}P36 ADNL: $( echo ${searchedADNL} | awk '{print $1}' ) PubKey: $( echo ${searchedADNL} | awk '{print $2}' ) Weight: $( echo ${searchedADNL} | awk '{print $3}' | calcWeight ) \n"
+  if [[ "${searchedADNL}" != "null" ]]
+  then
+    myMSG="${myMSG}P36 ADNL: $( echo ${searchedADNL} | awk '{print $1}' ) PubKey: $( echo ${searchedADNL} | awk '{print $2}' ) Weight: $( calcWeight $( echo ${searchedADNL} | awk '{print $3}' ) ) \n"
+    flagP36Curr=0
+  else
+    errMSG="${errMSG}P36: currADNL are EMPTY ( func return ${searchedADNL} )\n"
+    flagP36Curr=1
+  fi
+
   searchedADNL=$( findInP34Config $currADNL )
-  [[ "${searchedADNL}" != "null" ]] && myMSG="${myMSG}P34: ADNL: $( echo ${searchedADNL} | awk '{print $1}' ) PubKey: $( echo ${searchedADNL} | awk '{print $2}' ) Weight: $( echo ${searchedADNL} | awk '{print $3}' | calcWeight ) \n"
+  if [[ "${searchedADNL}" != "null" ]]
+  then
+    myMSG="${myMSG}P34: ADNL: $( echo ${searchedADNL} | awk '{print $1}' ) PubKey: $( echo ${searchedADNL} | awk '{print $2}' ) Weight: $( calcWeight $( echo ${searchedADNL} | awk '{print $3}' ) ) \n"
+    flagP34Curr=0
+  else
+    errMSG="${errMSG}P34: currADNL are EMPTY ( func return ${searchedADNL} )\n"
+    flagP34Curr=1
+  fi
 
   if [[ "${electionsID}" -eq 0 ]]
   then
     findNextADNLInElector=$( isValidatorInElector $isNextADNLReady )
-    [[ -n "${findNextADNLInElector}" && "${findNextADNLInElector}" != "null" ]] && myMSG="${myMSG}findNextADNLInElector is $findNextADNLInElector\n"
+    if [[ -n "${findNextADNLInElector}" && "${findNextADNLInElector}" != "null" ]]
+    then
+      myMSG="${myMSG}Validator info from Elector:\n$findNextADNLInElector\n"
+      flagNextInElector=0
+    else
+      errMSG="${errMSG}isNextADNLReady in Elector are empty! (func return: ${findNextADNLInElector} ) CRIT EXIT\n"
+      flagNextInElector=1
+    fi
 
     findcurrADNLInElector=$( isValidatorInElector $currADNL )
-    [[ -n "${findcurrADNLInElector}" && "${findNextADNLInElector}" != "null" ]] && myMSG="${myMSG}findCurrADNLInElector is $findcurrADNLInElector\n"
+    if [[ -n "${findcurrADNLInElector}" && "${findNextADNLInElector}" != "null" ]]
+    then
+      myMSG="${myMSG}Validator info from Elector:\n$findcurrADNLInElector\n"
+      flagCurrInElector=0
+    else
+      errMSG="${errMSG}currADNL in Elector are empty! (func return: ${findcurrADNLInElector} ) CRIT EXIT\n"
+      flagCurrInElector=1
+    fi
   fi
 
-  echo -e "GRAND TOTAL:\n${myMSG}\n"
+  echo -e "GRAND TOTAL:\n${myMSG}\nErrMsg:\n${errMSG}\n\nflagElection ${flagElection}\nflagCurrADNL ${flagCurrADNL}\nflagP36Next ${flagP36Next}\nflagP34Next ${flagP34Next}\nflagP36Curr ${flagP36Curr}\nflagP34Curr ${flagP34Curr}\nflagNextInElector ${flagNextInElector}\nflagCurrInElector ${flagCurrInElector}\n"
+  exit $STATE_OK
 }
+
+
+### main script
+
+if [ -z "${1}" ]
+then
+  usage
+fi
+
+while getopts ":w:c:t:hC:" myArgs
+do
+  case ${myArgs} in
+    w) warnValue=${OPTARG} ;;
+    c) critValue=${OPTARG} ;;
+    t) typeCheck=${OPTARG} ;;
+    C) configFile=${OPTARG} ;;
+    h) usage ;;
+    \?)  echo "Wrong option given. Check help ( $0 -h ) for usage."
+        exit $STATE_UNKNOWN
+        ;;
+  esac
+done
+
+if [[ "${typeCheck}" == "isValidatingNow" ]]
+then
+  isValidatingNow
+elif [[ "${typeCheck}" == "isValidatingNext" ]]
+then
+  isValidatingNext
+elif [[ -n "${typeCheck}" && -n "${warnValue}" && -n "${critValue}" ]]
+then
+  while true
+  do
+    case "$typeCheck" in
+      timeDiff ) getTimeDiff "${warnValue}" "${critValue}" ;;
+      walletBalance )
+        checkStatus walletBalance "${warnValue}" "${critValue}" $( "${tonScriptsDir}""${walletBalanceScript}" ) ;;
+      dePoolBalance )
+        checkStatus dePoolBalance "${warnValue}" "${critValue}" ;;
+      proxy1balance )
+        checkStatus proxy1balance "${warnValue}" "${critValue}" $( "${tonScriptsDir}""${depoolproxy1BalanceScript}" 2>/dev/null ) ;;
+      proxy2balance )
+        checkStatus proxy2balance "${warnValue}" "${critValue}" $( "${tonScriptsDir}""${depoolproxy2BalanceScript}" 2>/dev/null ) ;;
+      tickTokBalance )
+        checkStatus tickTokBalance "${warnValue}" "${critValue}" $( "${tonScriptsDir}""${tickTokBalanceScript}" ) ;;
+      * )
+        usage
+        exit ${STATE_UNKNOWN}
+        ;;
+    esac
+  done
+else
+  echo -e "Missing required parameter or parameters"
+  usage
+  exit ${STATE_UNKNOWN}
+fi
+
+
