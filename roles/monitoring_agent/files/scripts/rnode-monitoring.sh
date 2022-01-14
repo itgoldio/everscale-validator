@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# ilya.vasilev@itglobal.com, 2021
+# ilya.vasilev@itglobal.com, 2021, 2022
 # https://itgold.io
 # https://github.com/itgoldio
 
@@ -17,6 +17,9 @@ cd $getScriptDir
 
 source ton-env.sh
 
+Depool_addr=$DEPOOL_ADDR
+Validator_addr=$VALIDATOR_WALLET_ADDR
+
 # utils
 bcBin=$( which bc )
 bcArgs=" -ql "
@@ -30,7 +33,7 @@ tailLines=100
 headBin=$( which head )
 divideValue=1000000000
 
-version="0.6.0"
+version="0.7.0"
 
 # show usage/help info and exit
 usage() {
@@ -44,6 +47,7 @@ usage() {
     These checks calls without -w and -c params:
           isValidatingNow
           isValidatingNext
+          partCheck
 
     These checks requires warning and critical param:
           dePoolBalance
@@ -54,6 +58,9 @@ usage() {
   exit $STATE_UNKNOWN
 }
 
+getConsoleVersion() {
+  $TON_CONSOLE --version | awk '{print $2}'
+}
 
 getTonosCliVersion() {
   $TON_CLI --version | grep tonos_cli | awk '{print $2}'
@@ -64,7 +71,6 @@ getRNodeVersion() {
 }
 
 getDePoolBalance() {
-
   versionAsNumber=$( echo "$( getTonosCliVersion)" | sed 's/\.//g' )
   if [[ $versionAsNumber -le 0246 ]]
   then
@@ -129,7 +135,7 @@ checkStatus() {
   fi
 }
 
-getElectorAddr(){
+getElectorAddr() {
   $TON_CONSOLE -j -C $TON_CONSOLE_CONFIG -c 'getconfig 1' | grep -iq error
   if [[ $? -ne 0 ]]
   then
@@ -155,7 +161,21 @@ getAccountBalance() {
 
 isValidatingNow() {
   myRes=$( $TON_CONSOLE -j -C $TON_CONSOLE_CONFIG -c "getstats" | jq -r ".in_current_vset_p34" )
-  [[ -n $myRes ]] && echo $myRes || echo ""
+  if [[ -n $myRes ]]
+  then
+    if [[ "$myRes" == "true" ]]
+    then
+      echo "Current validator exist in P34 ( check via console: $myRes )"
+      exit $STATE_OK
+    elif [[ "$myRes" == "false" ]]
+    then
+      echo "Current validator not in P34 ( check via console: $myRes )"
+      exit $STATE_CRITICAL
+    fi
+  else
+    echo "Console return error output. Can not parse"
+    exit $STATE_UNKNOWN
+  fi
 }
 
 isValidatingNext() {
@@ -219,6 +239,231 @@ getTimeDiff() {
   fi
 }
 
+calcWeight() {
+  weight=${1}
+  [[ "${weight}" == "null" || -z "${weight}" ]] && weight=0
+  if [[ -e ${bcBin} ]]
+  then
+    echo "$( $bcBin -lq <<< "scale=3; ${weight} / 10000000000000000" )"
+  else
+    echo "${1}"
+  fi
+}
+
+calcStake() {
+  stake=${1}
+  [[ "${stake}" == "null" || -z "${stake}" ]] && stake=0
+  if [[ -e ${bcBin} ]]
+  then
+    echo "$( $bcBin -lq <<< "scale=3; ${stake} / 1000000000" )"
+  else
+    echo "${1}"
+  fi
+}
+
+getCurrentADNL() {
+  allKeysFromConfig=$( cat $TON_NODE_CONFIG | jq .validator_keys )
+  [[ "${allKeysFromConfig}" == "null" ]] && echo "null" && return
+  elections0=$( echo $allKeysFromConfig | jq -r .[0].election_id )
+  adnlKey0=$( echo $allKeysFromConfig | jq -r .[0].validator_adnl_key_id )
+  [[ "${adnlKey0}" == "null" ]] && echo "null" && return
+  elections1=$( echo $allKeysFromConfig | jq -r .[1].election_id )
+  adnlKey1=$( echo $allKeysFromConfig | jq -r .[1].validator_adnl_key_id )
+  if [[ "${adnlKey1}" == "null" ]]
+  then
+    myADNLKey=$( echo "${adnlKey0}" | base64 -d | od -t xC -An | tr -d '\n' | tr -d ' ' )
+    myElectionsID=$elections0
+  else
+    currElectionsID=$(( elections0 < elections1 ? elections0 : elections1 ))
+    nextElectionsID=$(( elections0 > elections1 ? elections0 : elections1 ))
+    currADNLKey=$( echo $allKeysFromConfig | jq -r ".[]|select(.election_id == $currElectionsID)|.validator_adnl_key_id" | base64 -d | od -t xC -An | tr -d '\n' | tr -d ' ' )
+    nextADNLKey=$( echo $allKeysFromConfig | jq -r ".[]|select(.election_id == $nextElectionsID)|.validator_adnl_key_id" | base64 -d | od -t xC -An | tr -d '\n' | tr -d ' ' )
+  fi
+  [[ -z "${adnlKey1}" || "${adnlKey1}" == "null" ]] && echo "${currADNLKey} ${currElectionsID}" || echo "${currADNLKey} ${currElectionsID} ${nextADNLKey} ${nextElectionsID}"
+}
+
+getP36Config() {
+  myRes=$( $TON_CLI -j -c $TON_CLI_CONFIG getconfig 36 | jq -r "." )
+  echo "${myRes}"
+}
+
+getP34Config() {
+  myRes=$( $TON_CLI -j -c $TON_CLI_CONFIG getconfig 34 | jq -r "." )
+  echo "${myRes}"
+}
+
+findInP34Config() {
+  isInP34=$( echo "$( getP34Config )" | jq ".list[]|select(.adnl_addr == \"${1}\")" )
+  if [[ -n $isInP34 ]]
+  then
+    adnl="$( echo ${isInP34} | jq -r .adnl_addr)"
+    pkey="$( echo ${isInP34} | jq -r .public_key)"
+    wght="$( echo ${isInP34} | jq -r .weight)"
+    echo "${adnl} ${pkey} ${wght}"
+  else
+    echo "null"
+  fi
+} 
+
+findInP36Config() {
+  myRes=$( getP36Config )
+  [[ $myRes == "null" ]] && echo "null" && return
+  isInp36=$( echo "$( getP36Config )" | jq ".list[]|select(.adnl_addr == \"${1}\")" )
+  if [[ -n $isInp36 ]]
+  then
+    adnl="$(echo ${isInp36} | jq -r .adnl_addr )"
+    pkey="$(echo ${isInp36} | jq -r .public_key )"
+    wght="$(echo ${isInp36} | jq -r .weight_dec )"
+    echo "${adnl} ${pkey} ${wght}"
+  else
+    echo "null"
+  fi
+}
+
+getParticipantListInElector() {
+  myRes=$( $TON_CLI -j -c $TON_CLI_CONFIG runget $( getElectorAddr ) participant_list_extended )  
+  echo "${myRes}"
+}
+
+getElectionsFromElector() {
+  myRes=$( $TON_CLI -j -c $TON_CLI_CONFIG runget $( getElectorAddr ) participant_list_extended | jq -r ".value0" )
+  echo "${myRes}"
+}
+
+isValidatorInElector() {
+  myADNL=${1}
+  isElectionsOnGoing=$( getElectionsFromElector )
+  [[ $isElectionsOnGoing -eq 0 ]] && echo "null" && return
+  myRes=$( getParticipantListInElector )
+  validatorInfo=$( echo "${myRes}" | sed 's/] ],/]],\n/g' | grep ${myADNL} )
+  validatorInfo=$( echo "${validatorInfo}" | | sed -E 's/\[|\"|\]|\,//g' )
+
+  if [[ -n ${validatorInfo} ]]
+  then
+    validatorPublicKey=$( echo "${validatorInfo}" | awk '{print $1}' )
+    validatorStake=$( calcStake $( echo "${validatorInfo}" | awk '{print $2}' ) )
+    validatorMaxFactor=$( echo "${validatorInfo}" | awk '{print $3}' )
+    validatorProxyAddr=$( echo "${validatorInfo}" | awk '{print $4}' )
+    validatorADNLAddr=$( echo "${validatorInfo}" | awk '{print $5}' )
+  else
+    echo "absent"
+    return
+  fi
+  echo "PubKey: ${validatorPublicKey} Stake: ${validatorStake} MaxFactor: ${validatorMaxFactor} ProxyAddr: ${validatorProxyAddr} ADNL: ${validatorADNLAddr}"
+}
+
+partCheck() {
+  getADNLInfo=$( getCurrentADNL )
+  [[ "${getADNLInfo}" == "null" ]] && echo "Validator never elected yet. ADNL is empty\n" && exit $STATE_UNKNOWN
+  electionsID=$( getCurrentElectionsID )
+  if [[ "${electionsID}" -eq 0 ]]
+  then
+    myMSG="There is no election period\n"
+    flagElection=1
+  else
+    myMSG="ElectionsID $electionsID, validating round start at $( date -d@${electionsID} "+%F %T" )\n"
+    flagElection=0
+  fi
+
+  currADNL=$( echo ${getADNLInfo} | awk '{print $1}' )
+  isNextADNLReady=$( echo ${getADNLInfo} | awk '{print $3}' )
+  if [[ -z $isNextADNLReady ]]
+  then  
+    errMSG="${errMSG}Current ADNL $currADNL Next ADNL EMPTY\n"
+    flagCurrADNL=1
+  else
+    myMSG="${myMSG}Current ADNL $currADNL Next ADNL $( echo ${getADNLInfo} | awk '{print $3}' )\n"
+    flagCurrADNL=0
+  fi
+
+  # search nextadnl
+  searchedADNL=$( findInP36Config $isNextADNLReady )
+  if [[ "${searchedADNL}" != "null" ]]
+  then
+    myMSG="${myMSG}P36: ADNL: $( echo ${searchedADNL} | awk '{print $1}' ) PubKey: $( echo ${searchedADNL} | awk '{print $2}' ) Weight: $( calcWeight $( echo ${searchedADNL} | awk '{print $3}' ) ) \n"
+    flagP36Next=0
+  else
+    errMSG="${errMSG}P36: isNextADNLReady are EMPTY ( func return ${searchedADNL} )\n"
+    flagP36Next=1
+  fi
+
+  searchedADNL=$( findInP34Config $isNextADNLReady )
+  if [[ "${searchedADNL}" != "null" ]]
+  then
+    myMSG="${myMSG}P34: ADNL: $( echo ${searchedADNL} | awk '{print $1}' ) PubKey: $( echo ${searchedADNL} | awk '{print $2}' ) Weight: $( calcWeight $( echo ${searchedADNL} | awk '{print $3}' ) ) \n"
+    flagP34Next=0
+  else
+    errMSG="${errMSG}P34: isNextADNLReady are EMPTY ( func return ${searchedADNL} )\n"
+    flagP34Next=1
+  fi
+
+  # search curradnl
+  searchedADNL=$( findInP36Config $currADNL )
+  if [[ "${searchedADNL}" != "null" ]]
+  then
+    myMSG="${myMSG}P36 ADNL: $( echo ${searchedADNL} | awk '{print $1}' ) PubKey: $( echo ${searchedADNL} | awk '{print $2}' ) Weight: $( calcWeight $( echo ${searchedADNL} | awk '{print $3}' ) ) \n"
+    flagP36Curr=0
+  else
+    errMSG="${errMSG}P36: currADNL are EMPTY ( func return ${searchedADNL} )\n"
+    flagP36Curr=1
+  fi
+
+  searchedADNL=$( findInP34Config $currADNL )
+  if [[ "${searchedADNL}" != "null" ]]
+  then
+    myMSG="${myMSG}P34: ADNL: $( echo ${searchedADNL} | awk '{print $1}' ) PubKey: $( echo ${searchedADNL} | awk '{print $2}' ) Weight: $( calcWeight $( echo ${searchedADNL} | awk '{print $3}' ) ) \n"
+    flagP34Curr=0
+  else
+    errMSG="${errMSG}P34: currADNL are EMPTY ( func return ${searchedADNL} )\n"
+    flagP34Curr=1
+  fi
+
+  # if [[ "${electionsID}" -eq 0 ]]
+  if [[ "${electionsID}" -ne 0 ]]
+  then
+    # skip 1.5 hours ( 5400 secs )
+    (( timeToCheck = electionsID + 5400 ))
+    curEpoch=$( date +%s )
+    if [[ $timeToCheck -le $curEpoch ]]
+      then
+      findNextADNLInElector=$( isValidatorInElector $isNextADNLReady )
+      if [[ -n "${findNextADNLInElector}" && "${findNextADNLInElector}" != "null" ]]
+      then
+        myMSG="${myMSG}Validator info from Elector:\n$findNextADNLInElector\n"
+        flagNextInElector=0
+      else
+        errMSG="${errMSG}isNextADNLReady in Elector are empty! (func return: ${findNextADNLInElector} )\n"
+        flagNextInElector=1
+      fi
+
+      findcurrADNLInElector=$( isValidatorInElector $currADNL )
+      if [[ -n "${findcurrADNLInElector}" && "${findNextADNLInElector}" != "null" ]]
+      then
+        myMSG="${myMSG}Validator info from Elector:\n$findcurrADNLInElector\n"
+        flagCurrInElector=0
+      else
+        errMSG="${errMSG}currADNL in Elector are empty! (func return: ${findcurrADNLInElector} )\n"
+        flagCurrInElector=1
+      fi
+    fi
+  fi
+
+  echo -e "GRAND TOTAL:
+${myMSG}
+ErrMsg: ${errMSG}
+flagElection ${flagElection} | flagElection=$flagElection;;;;\n
+flagCurrADNL ${flagCurrADNL} | flagCurrADNL=$flagCurrADNL;;;;\n
+flagP36Next ${flagP36Next} | flagP36Next=$flagP36Next;;;;\n
+flagP34Next ${flagP34Next} | flagP34Next=$flagP34Next;;;;\n
+flagP36Curr ${flagP36Curr} | flagP36Curr=$flagP36Curr;;;;\n
+flagP34Curr ${flagP34Curr} | flagP34Curr=$flagP34Curr;;;;\n
+flagNextInElector ${flagNextInElector:=-1} | flagNextInElector=${flagNextInElector:=-1};;;;\n
+flagCurrInElector ${flagCurrInElector:=-1} | flagCurrInElector=${flagCurrInElector:=-1};;;;\n
+"
+  [[ $flagNextInElector -eq 1 || $flagCurrInElector -eq 1 ]] && exit $STATE_CRITICAL || exit $STATE_OK
+}
+
+
 ### main script
 
 if [ -z "${1}" ]
@@ -246,6 +491,9 @@ then
 elif [[ "${typeCheck}" == "isValidatingNext" ]]
 then
   isValidatingNext
+elif [[ "${typeCheck}" == "partCheck" ]]
+then
+  partCheck
 elif [[ -n "${typeCheck}" && -n "${warnValue}" && -n "${critValue}" ]]
 then
   while true
@@ -274,212 +522,4 @@ else
   exit ${STATE_UNKNOWN}
 fi
 
-
-exit 0
-
-#!/usr/bin/env bash
-
-source ton-env.sh
-
-# =====================================================
-Depool_addr=$DEPOOL_ADDR
-Validator_addr=$VALIDATOR_WALLET_ADDR
-
-# =====================================================
-getElectorAddr(){
-  $TON_CONSOLE -j -C $TON_CONSOLE_CONFIG -c 'getconfig 1' | grep -iq error
-  if [[ $? -ne 0 ]]
-  then
-    myRes=$( $TON_CONSOLE -j -C $TON_CONSOLE_CONFIG -c "getconfig 1" | jq -r '.p1' )
-    [[ -n $myRes ]] && echo "-1:${myRes}" || echo ""
-  fi
-}
-
-getCurrentElectionsID() {
-  # Ровно до тех пор пока мы едем в мейне на фифте
-  # fift
-  myRes=$( $TON_CLI -j -c $TON_CLI_CONFIG runget $( getElectorAddr ) active_election_id | jq -r ".value0" )
-  [[ -n $myRes ]] && echo "${myRes}" || echo ""
-  # solidity
-  # myRes=$( $TON_CLI -j run $( getElectorAddr ) active_election_id '{}' --abi ${Elector_ABI} | jq -r '.value0')
-  # [[ -n $myRes ]] && echo "${myRes}" || echo ""
-}
-
-getCurrentADNL() {
-  allKeysFromConfig=$( cat $TON_NODE_CONFIG | jq .validator_keys )
-  [[ "${allKeysFromConfig}" == "null" ]] && echo "null" && return
-  elections0=$( echo $allKeysFromConfig | jq -r .[0].election_id )
-  adnlKey0=$( echo $allKeysFromConfig | jq -r .[0].validator_adnl_key_id )
-  [[ "${adnlKey0}" == "null" ]] && echo "null" && return
-  elections1=$( echo $allKeysFromConfig | jq -r .[1].election_id )
-  adnlKey1=$( echo $allKeysFromConfig | jq -r .[1].validator_adnl_key_id )
-  if [[ "${adnlKey1}" == "null" ]]
-  then
-    myADNLKey=$( echo "${adnlKey0}" | base64 -d | od -t xC -An | tr -d '\n' | tr -d ' ' )
-    myElectionsID=$elections0
-  else
-    currElectionsID=$(( elections0 < elections1 ? elections0 : elections1 ))
-    nextElectionsID=$(( elections0 > elections1 ? elections0 : elections1 ))
-    currADNLKey=$( echo $allKeysFromConfig | jq -r ".[]|select(.election_id == $currElectionsID)|.validator_adnl_key_id" | base64 -d|od -t xC -An|tr -d '\n' | tr -d ' ' )
-    nextADNLKey=$( echo $allKeysFromConfig | jq -r ".[]|select(.election_id == $nextElectionsID)|.validator_adnl_key_id" | base64 -d|od -t xC -An|tr -d '\n' | tr -d ' ' )
-  fi
-  [[ -z "${adnlKey1}" || "${adnlKey1}" == "null" ]] && echo "${currADNLKey} ${currElectionsID}" || echo "${currADNLKey} ${currElectionsID} ${nextADNLKey} ${nextElectionsID}"
-}
-
-getP36Config() {
-  myRes=$( $TON_CLI -j -c $TON_CLI_CONFIG getconfig 36 | jq -r "." )
-  echo "${myRes}"
-}
-
-getP34Config() {
-  myRes=$( $TON_CLI -j -c $TON_CLI_CONFIG getconfig 34 | jq -r "." )
-  echo "${myRes}"
-}
-
-findInP34Config() {
-  isInP34=$( $( getP34Config ) | jq ".list[]|select(.adnl_addr == \"${1}\")" )
-  if [[ -n $isInP34 ]]
-  then
-    adnl="$( echo ${found} | jq -r .adnl_addr)"
-    pkey="$( echo ${found} | jq -r .public_key)"
-    wght="$( echo ${found} | jq -r .weight)"
-    echo "${adnl} ${pkey} ${wght}"
-  else
-    echo "null"
-  fi
-}
-
-findInP36Config() {
-  isInp36=$( $( getP36Config ) | jq ".list[]|select(.adnl_addr == \"${1}\")" )
-  if [[ -n $isInp36 ]]
-  then
-    adnl="$(echo ${found} | jq -r .adnl_addr )"
-    pkey="$(echo ${found} | jq -r .public_key )"
-    wght="$(echo ${found} | jq -r .weight_dec )"
-    echo "${adnl} ${pkey} ${wght}"
-  else
-    echo "null"
-  fi
-}
-
-getParticipantListInElector() {
-  myRes=$( $TON_CLI -j -c $TON_CLI_CONFIG runget $( getElectorAddr ) participant_list_extended )  
-  echo "${myRes}"
-}
-
-getElectionsFromElector() {
-  myRes=$( $TON_CLI -j -c $TON_CLI_CONFIG runget $( getElectorAddr ) participant_list_extended | jq -r ".value0" )
-  echo "${myRes}"
-}
-
-isValidatorInElector() {
-  ADNL="${1}"
-  allParticipantsFromElector=$( getParticipantListInElector )
-  isElectionsOnGoing=$( getElectionsFromElector )
-  [[ $isElectionsOnGoing -eq 0 ]] && echo "null" && return
-  allParticipantsFromElector=$( echo "${allParticipantsFromElector}" | tr "]]" "\n" | tr '[' '\n' | awk 'NF > 0' | tr '","' ' ' )
-  isMyADNLPresent=$( echo "${allParticipantsFromElector}" | grep -i "0x${ADNL}" )
-
-  [[ -z $isMyADNLPresent ]] && echo "absent" && return
-
-  stake=$( echo "${isMyADNLPresent}" | awk '{print $1}' )
-  time=0
-  max_factor=$( echo "${isMyADNLPresent}" | awk '{print $2}' )
-  addr=$( echo "${allParticipantsFromElector}" | grep -B 1 "0x${ADNL}" | head -1 | cut -d 'x' -f 2 )
-  echo "$stake $time $max_factor $addr"
-}
-
-partCheck() {
-##################################################################################################
-electionsID=$( getCurrentElectionsID )
-echo "INFO: Elections ID:      $electionsID"
-echo "INFO: DePool Address:    $DEPOOL_ADDR"
-echo "INFO: Validator Address: $VALIDATOR_WALLET_ADDR"
-
-ADNLInfo=$( getCurrentADNL )
-if [[ "${ADNLInfo}" == "null" ]]
-then
-  echo "+++-WARNING You have not participated in any elections yet!"
-  exit 0
-fi
-
-ADNL_KEY="$1"
-######
-if [[ "${electionsID}" -eq 0 ]]
-then
-    currADNLKey=$( echo $ADNLInfo | awk '{print $3}' )
-    [[ -z $currADNLKey ]] && currADNLKey=$( echo $ADNLInfo | awk '{print $1}' )
-    ADNL_KEY=${ADNL_KEY:=$currADNLKey}
-    echo "INFO: Validator ADNL:    $ADNL_KEY"
-
-    CurOrNextMSG="NEXT"
-    date +"INFO: %F %T No current elections"
-    Part_VAL=$( findInP36Config $ADNL_KEY )
-    if [[ "${Part_VAL}" == "null" ]]
-    then
-      Part_VAL=$( findInP34Config $ADNL_KEY )
-      CurOrNextMSG="CURRENT"
-    fi
-    
-    FOUND_PUB_KEY=$( echo "$Part_VAL" | awk '{print $1}' )
-    if [[ "$FOUND_PUB_KEY" == "absent" ]]
-    then
-        echo "###-ERROR: Your ADNL Key NOT FOUND in current or next validators list!!!"
-        # for icinga
-        echo "ERROR ADNL NOT FOUND IN P34 OR P36 CONFIG" > "${nodeStats}"
-        exit 1
-    fi
-
-    VAL_WEIGHT=$( echo "$Part_VAL" | awk '{print $2}' )
-    echo
-    CALL_BC=$( which bc )
-    if [[ ! -f $CALL_BC ]]
-    then 
-      echo "INFO: Found you in $CurOrNextMSG validators with weight $(echo "scale=3; ${VAL_WEIGHT} / 10000000000000000" | $CALL_BC)%"
-    else
-      echo "INFO: Found you in $CurOrNextMSG validators with weight ${VAL_WEIGHT}"
-    fi
-    echo "INFO: Your public key: $FOUND_PUB_KEY"
-    echo "INFO: Your   ADNL key: $(echo "$ADNL_KEY" | tr "[:upper:]" "[:lower:]")"
-    echo "-----------------------------------------------------------------------------------------------------"
-    echo
-fi
-
-Next_ADNL_Key=;( echo $ADNLInfo | awk '{print $3}' )
-[[ -z $Next_ADNL_Key ]] && Next_ADNL_Key=$( echo $ADNLInfo|awk '{print $1}' )
-ADNL_KEY=${ADNL_KEY:=$Next_ADNL_Key}
-echo "INFO: Validator ADNL:    $ADNL_KEY"
-echo
-echo "Now is $(date +'%F %T %Z')"
-# new_val_round_date="$(echo "$electionsID" | gawk '{print strftime("%Y-%m-%d %H:%M:%S", $1)}')"
-new_val_round_date=$( date -d@"$electionsID" "+%F %T" )
-
-ADNL_FOUND=$( isValidatorInElector $ADNL_KEY )
-if [[ "$ADNL_FOUND" == "absent" ]];then
-    echo -e "${Tg_SOS_sign}###-ERROR: Can't find you in participant list in Elector. account: ${Depool_addr}"
-    exit 1
-fi
-
-Your_Stake=$( echo "${ADNL_FOUND}" | awk '{print $1 / 1000000000}' )
-You_PubKey=$( echo "${ADNL_FOUND}" | awk '{print $4}' )
-
-echo "---INFO: Your stake: $Your_Stake with ADNL: $(echo "$ADNL_KEY" | tr "[:upper:]" "[:lower:]")"
-echo "You public key in Elector: $You_PubKey"
-echo "You will start validate from $(TD_unix2human ${electionsID})"
-
-echo $electionsID > ${ELECTIONS_WORK_DIR}/curent_electionsID.txt
-# for icinga
-echo "INFO
-ELECTION ID ${electionsID} ;
-DEPOOL ADDRESS $Depool_addr ;
-VALIDATOR ADDRESS $Validator_addr ;
-STAKE $Your_Stake ;
-ADNL ${ADNL_KEY} ;
-KEY IN ELECTOR $You_PubKey ;
-"
-}
-
-
-echo "partCheck here"
-partCheck
 
