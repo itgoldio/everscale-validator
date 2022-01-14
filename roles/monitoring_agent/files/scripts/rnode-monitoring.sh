@@ -418,31 +418,49 @@ partCheck() {
     flagP34Curr=1
   fi
 
-  if [[ "${electionsID}" -eq 0 ]]
+  # if [[ "${electionsID}" -eq 0 ]]
+  if [[ "${electionsID}" -ne 0 ]]
   then
-    findNextADNLInElector=$( isValidatorInElector $isNextADNLReady )
-    if [[ -n "${findNextADNLInElector}" && "${findNextADNLInElector}" != "null" ]]
-    then
-      myMSG="${myMSG}Validator info from Elector:\n$findNextADNLInElector\n"
-      flagNextInElector=0
-    else
-      errMSG="${errMSG}isNextADNLReady in Elector are empty! (func return: ${findNextADNLInElector} ) CRIT EXIT\n"
-      flagNextInElector=1
-    fi
+    # skip 1.5 hours ( 5400 secs )
+    (( timeToCheck = electionsID + 5400 ))
+    curEpoch=$( date +%s )
+    if [[ $timeToCheck -le $curEpoch ]]
+      then
+      findNextADNLInElector=$( isValidatorInElector $isNextADNLReady )
+      if [[ -n "${findNextADNLInElector}" && "${findNextADNLInElector}" != "null" ]]
+      then
+        myMSG="${myMSG}Validator info from Elector:\n$findNextADNLInElector\n"
+        flagNextInElector=0
+      else
+        errMSG="${errMSG}isNextADNLReady in Elector are empty! (func return: ${findNextADNLInElector} )\n"
+        flagNextInElector=1
+      fi
 
-    findcurrADNLInElector=$( isValidatorInElector $currADNL )
-    if [[ -n "${findcurrADNLInElector}" && "${findNextADNLInElector}" != "null" ]]
-    then
-      myMSG="${myMSG}Validator info from Elector:\n$findcurrADNLInElector\n"
-      flagCurrInElector=0
-    else
-      errMSG="${errMSG}currADNL in Elector are empty! (func return: ${findcurrADNLInElector} ) CRIT EXIT\n"
-      flagCurrInElector=1
+      findcurrADNLInElector=$( isValidatorInElector $currADNL )
+      if [[ -n "${findcurrADNLInElector}" && "${findNextADNLInElector}" != "null" ]]
+      then
+        myMSG="${myMSG}Validator info from Elector:\n$findcurrADNLInElector\n"
+        flagCurrInElector=0
+      else
+        errMSG="${errMSG}currADNL in Elector are empty! (func return: ${findcurrADNLInElector} )\n"
+        flagCurrInElector=1
+      fi
     fi
   fi
 
-  echo -e "GRAND TOTAL:\n${myMSG}\nErrMsg:\n${errMSG}\n\nflagElection ${flagElection}\nflagCurrADNL ${flagCurrADNL}\nflagP36Next ${flagP36Next}\nflagP34Next ${flagP34Next}\nflagP36Curr ${flagP36Curr}\nflagP34Curr ${flagP34Curr}\nflagNextInElector ${flagNextInElector}\nflagCurrInElector ${flagCurrInElector}\n"
-  exit $STATE_OK
+  echo -e "GRAND TOTAL:
+${myMSG}
+ErrMsg: ${errMSG}
+flagElection ${flagElection} | flagElection=$flagElection;;;;\n
+flagCurrADNL ${flagCurrADNL} | flagCurrADNL=$flagCurrADNL;;;;\n
+flagP36Next ${flagP36Next} | flagP36Next=$flagP36Next;;;;\n
+flagP34Next ${flagP34Next} | flagP34Next=$flagP34Next;;;;\n
+flagP36Curr ${flagP36Curr} | flagP36Curr=$flagP36Curr;;;;\n
+flagP34Curr ${flagP34Curr} | flagP34Curr=$flagP34Curr;;;;\n
+flagNextInElector ${flagNextInElector:=-1} | flagNextInElector=${flagNextInElector:=-1};;;;\n
+flagCurrInElector ${flagCurrInElector:=-1} | flagCurrInElector=${flagCurrInElector:=-1};;;;\n
+"
+  [[ $flagNextInElector -eq 1 || $flagCurrInElector -eq 1 ]] && exit $STATE_CRITICAL || exit $STATE_OK
 }
 
 
