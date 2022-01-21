@@ -1,4 +1,4 @@
-### This ansible script is designed for deploying a rust-based freeton node on dedicated or virtual servers.
+### This ansible script is designed for deploying a rust-based everscale node on dedicated or virtual servers.
 
 ---
 ## Compatibility
@@ -32,11 +32,11 @@ Ansible ([What is Ansible](https://www.ansible.com/resources/videos/quick-start-
 
 1. Download or clone this repository
 
-`git clone https://github.com/itgoldio/freeton-rfld-ansible.git`
+`git clone https://github.com/itgoldio/everscale-validator`
 
 2. Go to the playbook directory
 
-`cd freeton-rfld-ansible/`
+`cd everscale-validator/`
 
 3. Edit the inventory file
 
@@ -79,13 +79,13 @@ See the vars/[ton_node.yml](./vars/ton_node.yml), vars/[system.yml](./vars/syste
 
 ---
 ## Usage
-By default, after deploying the freeton node it gets started automatically (change this behavior in vars/[ton_node.yml](./vars/ton_node.yml)).
-You can control the running status of the freeton node using systemd commands:
+By default, after deploying the everscale node it gets started automatically (change this behavior in vars/[ton_node.yml](./vars/ton_node.yml)).
+You can control the running status of the everscale node using systemd commands:
 `systemctl status ton-rnode`\
 `systemctl stop ton-rnode` \
 `systemctl start ton-rnode`
 
-Freeton node stores logs in `/var/ton-work/rnode/logs` directory (change this by specifying **`ton_node_log_dir`** var in vars/[ton_node.yml](./vars/ton_node.yml)).
+Everscale node stores logs in `/var/ton-work/rnode/logs` directory (change this by specifying **`ton_node_log_dir`** var in vars/[ton_node.yml](./vars/ton_node.yml)).
 You can change log rules in file roles/ton_node_deploy/ton_node_deploy/[log_cfg.yml.j2](./roles/ton_node_deploy/templates/log_cfg.yml.j2)
 
 Binary files located in `/usr/local/bin`, all other locations stored in vars/[ton_node.yml](./vars/ton_node.yml)
@@ -138,7 +138,7 @@ You can see or change credentials in vars/[monitoring.yml](./vars/monitoring.yml
 
 ---
 ## StatsD metrics
-We support builded in freeton rust node StatsD service. It is disabled by default, to turn it on change **`ton_node_metrics_enabled`** to True in vars/[ton_node.yml](./vars/ton_node.yml). When you enable it you will able to use grafana dashboard: 
+We support builded in everscale rust node StatsD service. It is disabled by default, to turn it on change **`ton_node_metrics_enabled`** to True in vars/[ton_node.yml](./vars/ton_node.yml). When you enable it you will able to use grafana dashboard: 
 ![dashboard](docs/grafana-2.png?raw=true "grafana-2")
 
 `http://<monitoring_server_ip>:3000/d/ton-3/freeton-statsd-metrics`
@@ -192,7 +192,11 @@ To automate it, just add next string to cron\
 ## Scripts
 All scripts will be added to PATH env for freeton user. Monitoring agent use several scripts.
 ### [ton-env.sh](./roles/monitoring_agent/files/../templates/ton-env.j2)
-Script main script. It store all shared variables that used in other scripts. Please, fill it first.
+Main script. It store all shared variables that used in other scripts. Please, fill it first.
+
+### [rnode-monitoring.sh](./roles/monitoring_agent/files/scripts/rnode-monitoring.sh)
+Main script for monitoring with icinga
+
 ### [ton-check-env.sh](./roles/monitoring_agent/files/scripts/ton-check-env.sh)
 Script system script. It check that ton-env.sh fill correct. Don't use it directly.
 ### [ton-depool-balance.sh](./roles/monitoring_agent/files/scripts/ton-depool-balance.sh)
@@ -237,6 +241,10 @@ Script return info about next validation round.
 - False - node can't validate in next round
 
 ---
+
+## Generate and deploy accounts
+In this build we use [Custler's scripts](https://github.com/Custler/main.evs.dev)
+If you preffer automatically deploy accounts by scripts, start reading from [here](https://github.com/Custler/main.evs.dev#5-deploy-accounts)
 
 ## Support
 We can help you in telegram chats

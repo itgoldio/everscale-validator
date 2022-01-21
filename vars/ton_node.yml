@@ -124,9 +124,27 @@ ton_node_additional_contracts:
 # Custler's env
 ###
 
+# can be msig or depool
+stake_mode: depool
 elector_type: fift
 delay_time: 0
 time_shift: 600
+
+# depool vars
+validator_assurance_in_tokens: 100000
+min_stake_in_tokens: 10
+
+participant_reward_fraction: 95
+balance_threshold_in_tokens: 20
+tik_replanish_amount: 10
+
+# msig vars
+msig_fix_stake: 45000
+val_acc_init_bal: 99000
+val_acc_reserved: 50
+lc_send_msg_timeout: 60
+
+
 
 liteserver_ip: "127.0.0.1"
 liteserver_port: "3031"
