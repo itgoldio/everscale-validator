@@ -63,15 +63,15 @@ usage() {
 }
 
 getConsoleVersion() {
-  $TON_CONSOLE --version | $headBin -n20 | $awkBin '{print $2}'
+  ${TON_CONSOLE} --version | ${headBin} -n20 | ${awkBin} '{print $2}'
 }
 
 getTonosCliVersion() {
-  $TON_CLI --version | $headBin -n 20 | $grepBin tonos_cli | awk '{print $2}'
+  ${TON_CLI} --version | ${headBin} -n 20 | ${grepBin} tonos_cli | awk '{print $2}'
 }
 
 getRNodeVersion() {
-  $RNODE_BIN --version | $headBin -n20 | $grepBin version | awk '{print $4}'
+  ${RNODE_BIN} --version | ${headBin} -n20 | ${grepBin} version | awk '{print $4}'
 }
 
 getDePoolBalance() {
@@ -277,6 +277,8 @@ getCurrentADNL() {
   then
     myADNLKey=$( echo "${adnlKey0}" | base64 -d | od -t xC -An | tr -d '\n' | tr -d ' ' )
     myElectionsID=$elections0
+    currADNLKey=${myADNLKey}
+    currElectionsID=${myElectionsID}
   else
     currElectionsID=$(( elections0 < elections1 ? elections0 : elections1 ))
     nextElectionsID=$(( elections0 > elections1 ? elections0 : elections1 ))
@@ -335,12 +337,15 @@ getElectionsFromElector() {
 }
 
 isValidatorInElector() {
+  [[ -z ${1} || ! -n ${1} ]] && echo "null" && return
   myADNL=${1}
   isElectionsOnGoing=$( getElectionsFromElector )
   [[ $isElectionsOnGoing -eq 0 ]] && echo "null" && return
   myRes=$( getParticipantListInElector )
-  validatorInfo=$( echo "${myRes}" | sed 's/] ],/]],\n/g' | grep ${myADNL} )
-  validatorInfo=$( echo "${validatorInfo}" | | sed -E 's/\[|\"|\]|\,//g' )
+  # validatorInfo=$( echo "${myRes}" | sed 's/] ],/]],\n/g' | grep ${myADNL} )
+  # validatorInfo=$( echo "${validatorInfo}" | sed -E 's/\[|\"|\]|\,//g' )
+  # validatorInfo=$( echo "${validatorInfo}" | sed 's/\[//g;s/,//g;s/"//g' )
+  validatorInfo=$( echo $myRes | sed 's/] ],/]],\n/g' | grep ${myADNL} | sed 's/\[//g;s/,//g;s/"//g' )
 
   if [[ -n ${validatorInfo} ]]
   then
@@ -370,15 +375,20 @@ partCheck() {
   fi
 
   currADNL=$( echo ${getADNLInfo} | awk '{print $1}' )
+  currADNLReadyFrom=$( echo ${getADNLInfo} | awk '{print $2}' )
   isNextADNLReady=$( echo ${getADNLInfo} | awk '{print $3}' )
-  if [[ -z $isNextADNLReady ]]
+  isNextADNLReadyFrom=$( echo ${getADNLInfo} | awk '{print $4}' )
+
+  if [[ -z ${isNextADNLReady} ]]
   then  
-    errMSG="${errMSG}Current ADNL $currADNL Next ADNL EMPTY\n"
+    myMSG="${myMSG}Current ADNL ${currADNL} valid from ${currADNLReadyFrom} ( Human-readable: $( date -d@${currADNLReadyFrom} ) )\nNext ADNL EMPTY\n"
     flagCurrADNL=1
   else
-    myMSG="${myMSG}Current ADNL $currADNL Next ADNL $( echo ${getADNLInfo} | awk '{print $3}' )\n"
+    myMSG="${myMSG}Current ADNL ${currADNL} valid from ${currADNLReadyFrom} ( Human-readable: $( date -d@${currADNLReadyFrom} ) )\nNext ADNL ${isNextADNLReady} valid from ${isNextADNLReadyFrom} ( Human-readable: $( date -d@${isNextADNLReadyFrom} ) )\n"
     flagCurrADNL=0
   fi
+
+  errMSG="\n"
 
   # search nextadnl
   searchedADNL=$( findInP36Config $isNextADNLReady )
@@ -422,39 +432,66 @@ partCheck() {
     flagP34Curr=1
   fi
 
-  # if [[ "${electionsID}" -eq 0 ]]
   if [[ "${electionsID}" -ne 0 ]]
   then
-    # skip 1.5 hours ( 5400 secs )
-    (( timeToCheck = electionsID + 5400 ))
+    timeDelayBeforeElectionsEnd=60
+    timeDelayAfterElectionStart=5400
+    electionID=$( $TON_CONSOLE -j -C $TON_CONSOLE_CONFIG -c "getconfig 34"  | jq -r ".p34.utime_until" )
+    elections_start_before=$( $TON_CONSOLE -j -C $TON_CONSOLE_CONFIG -c "getconfig 15" | jq -r ".p15.elections_start_before" )
+    elections_end_before=$( $TON_CONSOLE -j -C $TON_CONSOLE_CONFIG -c "getconfig 15" | jq -r ".p15.elections_end_before" )
+    (( electionStart = electionID - elections_start_before ))
+    (( electionEnd = electionID - elections_end_before ))
+    (( timeToCheckBeforeEndElections = electionEnd - timeDelayBeforeElectionsEnd ))
+    (( timeToCheckAfterStartElections = electionStart - timeDelayAfterElectionStart ))
     curEpoch=$( date +%s )
-    if [[ $timeToCheck -le $curEpoch ]]
+    if [[ $curEpoch -le $timeToCheckBeforeEndElections && $curEpoch -ge $timeToCheckAfterStartElections ]]
+    then
+      allValidatorsInElector=$( getParticipantListInElector )
+      if [[ ! -z $isNextADNLReady && -n $isNextADNLReady ]]
       then
-      findNextADNLInElector=$( isValidatorInElector $isNextADNLReady )
-      if [[ -n "${findNextADNLInElector}" && "${findNextADNLInElector}" != "null" ]]
-      then
-        myMSG="${myMSG}Validator info from Elector:\n$findNextADNLInElector\n"
+        myCheck=$( echo ${allValidatorsInElector} | $grepBin -q $isNextADNLReady )
+        if [[ $? -eq 0 ]]
+        then
+          findNextADNLInElector=$( isValidatorInElector $isNextADNLReady )
+          # if [[ -n "${findNextADNLInElector}" && "${findNextADNLInElector}" != "null" ]]
+          # then
+            myMSG="${myMSG}Validator info from Elector:\n$findNextADNLInElector\n"
+            flagNextInElector=0
+          # fi
+        else
+          errMSG="${errMSG}isNextADNLReady in Elector are empty! (func return: ${findNextADNLInElector} )\n"
+          flagNextInElector=1
+        fi
+      else
+        errMSG="${errMSG}Next ADNL NOT SET! First time?\n"
         flagNextInElector=0
-      else
-        errMSG="${errMSG}isNextADNLReady in Elector are empty! (func return: ${findNextADNLInElector} )\n"
-        flagNextInElector=1
-      fi
+      fi  
 
-      findcurrADNLInElector=$( isValidatorInElector $currADNL )
-      if [[ -n "${findcurrADNLInElector}" && "${findNextADNLInElector}" != "null" ]]
+      if [[ ! -z $currADNL && -n $currADNL ]]
       then
-        myMSG="${myMSG}Validator info from Elector:\n$findcurrADNLInElector\n"
-        flagCurrInElector=0
+        myCheck=$( echo ${allValidatorsInElector} | $grepBin -q ${currADNL} )
+        if [[ $? -eq 0 ]]
+        then
+          findCurrADNLInElector=$( isValidatorInElector $currADNL )
+          # if [[ -n "${findCurrADNLInElector}" && "${findCurrADNLInElector}" != "null" ]]
+          # then
+            myMSG="${myMSG}Validator info from Elector:\n$findCurrADNLInElector\n"
+            flagCurrInElector=0
+          # fi
+        else
+          errMSG="${errMSG}currADNL in Elector are empty! (func return: ${findCurrADNLInElector} )\n"
+          flagCurrInElector=1
+        fi
       else
-        errMSG="${errMSG}currADNL in Elector are empty! (func return: ${findcurrADNLInElector} )\n"
-        flagCurrInElector=1
+        errMSG="${errMSG}Current ADNL NOT SET! Validator not configured?\n"
+        flagNextInElector=1
       fi
     fi
   fi
 
-  echo -e "GRAND TOTAL:
-${myMSG}
-ErrMsg: ${errMSG}
+  echo -e "GRAND TOTAL:\n
+${myMSG}\n
+ErrMsg: ${errMSG}\n
 flagElection ${flagElection} | flagElection=${flagElection};;;;\n
 flagCurrADNL ${flagCurrADNL} | flagCurrADNL=${flagCurrADNL};;;;\n
 flagP36Next ${flagP36Next} | flagP36Next=${flagP36Next};;;;\n
@@ -464,6 +501,9 @@ flagP34Curr ${flagP34Curr} | flagP34Curr=${flagP34Curr};;;;\n
 flagNextInElector ${flagNextInElector:=-1} | flagNextInElector=${flagNextInElector:=-1};;;;\n
 flagCurrInElector ${flagCurrInElector:=-1} | flagCurrInElector=${flagCurrInElector:=-1};;;;\n
 "
+  # first time validate
+  [[ $flagCurrInElector -eq 1 ]] && exit $STATE_OK
+  # any other situations
   [[ $flagNextInElector -eq 1 || $flagCurrInElector -eq 1 ]] && exit $STATE_CRITICAL || exit $STATE_OK
 }
 
