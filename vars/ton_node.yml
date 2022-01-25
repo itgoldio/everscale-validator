@@ -18,7 +18,7 @@ ton_node_global_config_URL_list:
     DAPP_address: "https://main.ton.dev"
     DAPP_endpoints: "https://main2.ton.dev,https://main3.ton.dev,https://main4.ton.dev"
   net:
-    config_URL: "https://raw.githubusercontent.com/tonlabs/net.ton.dev/master/configs/net.ton.dev/ton-global.config.json"
+    config_URL: "https://raw.githubusercontent.com/tonlabs/net.ton.dev/master/configs/ton-global.config.json"
     DAPP_address: "https://net.ton.dev"
     DAPP_endpoints: "https://net1.ton.dev,https://net5.ton.dev"
   fld:
