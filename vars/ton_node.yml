@@ -147,8 +147,6 @@ val_acc_init_bal: 99000
 val_acc_reserved: 50
 lc_send_msg_timeout: 60
 
-
-
 liteserver_ip: "127.0.0.1"
 liteserver_port: "3031"
 val_engine_console_ip: "127.0.0.1"
