@@ -277,6 +277,8 @@ getCurrentADNL() {
   then
     myADNLKey=$( echo "${adnlKey0}" | base64 -d | od -t xC -An | tr -d '\n' | tr -d ' ' )
     myElectionsID=$elections0
+    currADNLKey=${myADNLKey}
+    currElectionsID=${myElectionsID}
   else
     currElectionsID=$(( elections0 < elections1 ? elections0 : elections1 ))
     nextElectionsID=$(( elections0 > elections1 ? elections0 : elections1 ))
@@ -339,8 +341,10 @@ isValidatorInElector() {
   isElectionsOnGoing=$( getElectionsFromElector )
   [[ $isElectionsOnGoing -eq 0 ]] && echo "null" && return
   myRes=$( getParticipantListInElector )
-  validatorInfo=$( echo "${myRes}" | sed 's/] ],/]],\n/g' | grep ${myADNL} )
-  validatorInfo=$( echo "${validatorInfo}" | | sed -E 's/\[|\"|\]|\,//g' )
+  # validatorInfo=$( echo "${myRes}" | sed 's/] ],/]],\n/g' | grep ${myADNL} )
+  # validatorInfo=$( echo "${validatorInfo}" | sed -E 's/\[|\"|\]|\,//g' )
+  # validatorInfo=$( echo "${validatorInfo}" | sed 's/\[//g;s/,//g;s/"//g' )
+  validatorInfo=$( echo $myRes | sed 's/] ],/]],\n/g' | grep ${myADNL} | sed 's/\[//g;s/,//g;s/"//g' )
 
   if [[ -n ${validatorInfo} ]]
   then
@@ -370,15 +374,20 @@ partCheck() {
   fi
 
   currADNL=$( echo ${getADNLInfo} | awk '{print $1}' )
+  currADNLReadyFrom=$( echo ${getADNLInfo} | awk '{print $2}' )
   isNextADNLReady=$( echo ${getADNLInfo} | awk '{print $3}' )
-  if [[ -z $isNextADNLReady ]]
+  isNextADNLReadyFrom=$( echo ${getADNLInfo} | awk '{print $4}' )
+
+  if [[ -z ${isNextADNLReady} ]]
   then  
-    errMSG="${errMSG}Current ADNL $currADNL Next ADNL EMPTY\n"
+    myMSG="${myMSG}Current ADNL ${currADNL} valid from ${currADNLReadyFrom} ( Human-readable: $( date -d@${currADNLReadyFrom} ) )\nNext ADNL EMPTY\n"
     flagCurrADNL=1
   else
-    myMSG="${myMSG}Current ADNL $currADNL Next ADNL $( echo ${getADNLInfo} | awk '{print $3}' )\n"
+    myMSG="${myMSG}Current ADNL ${currADNL} valid from ${currADNLReadyFrom} ( Human-readable: $( date -d@${currADNLReadyFrom} ) )\nNext ADNL ${isNextADNLReady} valid from ${isNextADNLReadyFrom} ( Human-readable: $( date -d@${isNextADNLReadyFrom} ) )\n"
     flagCurrADNL=0
   fi
+
+  errMSG="\n"
 
   # search nextadnl
   searchedADNL=$( findInP36Config $isNextADNLReady )
@@ -452,9 +461,9 @@ partCheck() {
     fi
   fi
 
-  echo -e "GRAND TOTAL:
-${myMSG}
-ErrMsg: ${errMSG}
+  echo -e "GRAND TOTAL:\n
+${myMSG}\n
+ErrMsg: ${errMSG}\n
 flagElection ${flagElection} | flagElection=${flagElection};;;;\n
 flagCurrADNL ${flagCurrADNL} | flagCurrADNL=${flagCurrADNL};;;;\n
 flagP36Next ${flagP36Next} | flagP36Next=${flagP36Next};;;;\n
