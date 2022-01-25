@@ -25,15 +25,16 @@ bcBin=$( which bc )
 bcArgs=" -ql "
 bcLib="${getScriptDir}/bcLibForFloating"
 
-grepBin=$( which grep )
+grepBin=$( which grep | grep -v alias )
 cutBin=$( which cut )
 trBin=$( which tr )
 tailBin=$( which tail )
 tailLines=100
 headBin=$( which head )
 divideValue=1000000000
+awkBin=$( which awk )
 
-version="0.7.0"
+version="0.7.2"
 
 # show usage/help info and exit
 usage() {
@@ -48,6 +49,9 @@ usage() {
           isValidatingNow
           isValidatingNext
           partCheck
+          getConsoleVersion
+          getTonosCliVersion
+          getRNodeVersion
 
     These checks requires warning and critical param:
           dePoolBalance
@@ -59,15 +63,15 @@ usage() {
 }
 
 getConsoleVersion() {
-  $TON_CONSOLE --version | awk '{print $2}'
+  $TON_CONSOLE --version | $headBin -n20 | $awkBin '{print $2}'
 }
 
 getTonosCliVersion() {
-  $TON_CLI --version | grep tonos_cli | awk '{print $2}'
+  $TON_CLI --version | $headBin -n 20 | $grepBin tonos_cli | awk '{print $2}'
 }
 
 getRNodeVersion() {
-  $RNODE_BIN --version | grep version | awk '{print $4}'
+  $RNODE_BIN --version | $headBin -n20 | $grepBin version | awk '{print $4}'
 }
 
 getDePoolBalance() {
@@ -354,7 +358,7 @@ isValidatorInElector() {
 
 partCheck() {
   getADNLInfo=$( getCurrentADNL )
-  [[ "${getADNLInfo}" == "null" ]] && echo "Validator never elected yet. ADNL is empty\n" && exit $STATE_UNKNOWN
+  [[ "${getADNLInfo}" == "null" ]] && echo "Validator never elected yet. ADNL is empty" && exit $STATE_UNKNOWN
   electionsID=$( getCurrentElectionsID )
   if [[ "${electionsID}" -eq 0 ]]
   then
@@ -451,12 +455,12 @@ partCheck() {
   echo -e "GRAND TOTAL:
 ${myMSG}
 ErrMsg: ${errMSG}
-flagElection ${flagElection} | flagElection=$flagElection;;;;\n
-flagCurrADNL ${flagCurrADNL} | flagCurrADNL=$flagCurrADNL;;;;\n
-flagP36Next ${flagP36Next} | flagP36Next=$flagP36Next;;;;\n
-flagP34Next ${flagP34Next} | flagP34Next=$flagP34Next;;;;\n
-flagP36Curr ${flagP36Curr} | flagP36Curr=$flagP36Curr;;;;\n
-flagP34Curr ${flagP34Curr} | flagP34Curr=$flagP34Curr;;;;\n
+flagElection ${flagElection} | flagElection=${flagElection};;;;\n
+flagCurrADNL ${flagCurrADNL} | flagCurrADNL=${flagCurrADNL};;;;\n
+flagP36Next ${flagP36Next} | flagP36Next=${flagP36Next};;;;\n
+flagP34Next ${flagP34Next} | flagP34Next=${flagP34Next};;;;\n
+flagP36Curr ${flagP36Curr} | flagP36Curr=${flagP36Curr};;;;\n
+flagP34Curr ${flagP34Curr} | flagP34Curr=${flagP34Curr};;;;\n
 flagNextInElector ${flagNextInElector:=-1} | flagNextInElector=${flagNextInElector:=-1};;;;\n
 flagCurrInElector ${flagCurrInElector:=-1} | flagCurrInElector=${flagCurrInElector:=-1};;;;\n
 "
@@ -494,6 +498,15 @@ then
 elif [[ "${typeCheck}" == "partCheck" ]]
 then
   partCheck
+elif [[ "${typeCheck}" == "getConsoleVersion" ]]
+then
+  getConsoleVersion
+elif [[ "${typeCheck}" == "getTonosCliVersion" ]]
+then
+  getTonosCliVersion
+elif [[ "${typeCheck}" == "getRNodeVersion" ]]
+then
+  getRNodeVersion
 elif [[ -n "${typeCheck}" && -n "${warnValue}" && -n "${critValue}" ]]
 then
   while true
