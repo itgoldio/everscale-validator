@@ -124,6 +124,9 @@ ton_node_additional_contracts:
 # Custler's env
 ###
 
+wrk_dir: "/var"
+ton_wrk_dir: "$WRK_DIR/ton-work"
+
 # can be msig or depool
 stake_mode: depool
 elector_type: fift
