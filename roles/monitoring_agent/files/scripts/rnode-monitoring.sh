@@ -200,7 +200,6 @@ isValidatingNow() {
 }
 
 isValidatingNext() {
-
   isElectionsAreOpen=$( isItElectionTime )
   if [[ ${isElectionsAreOpen} == "false" ]]
   then
