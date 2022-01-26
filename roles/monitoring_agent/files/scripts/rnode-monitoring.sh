@@ -20,6 +20,9 @@ source ton-env.sh
 Depool_addr=$DEPOOL_ADDR
 Validator_addr=$VALIDATOR_WALLET_ADDR
 
+timeDelayBeforeElectionsEnd=60
+timeDelayAfterElectionStart=5400
+
 # utils
 bcBin=$( which bc )
 bcArgs=" -ql "
@@ -34,7 +37,7 @@ headBin=$( which head )
 divideValue=1000000000
 awkBin=$( which awk )
 
-version="0.7.2"
+version="0.7.4"
 
 # show usage/help info and exit
 usage() {
@@ -62,6 +65,19 @@ usage() {
   exit $STATE_UNKNOWN
 }
 
+isItElectionTime() {
+  electionID=$( $TON_CONSOLE -j -C $TON_CONSOLE_CONFIG -c "getconfig 34"  | jq -r ".p34.utime_until" )
+  elections_start_before=$( $TON_CONSOLE -j -C $TON_CONSOLE_CONFIG -c "getconfig 15" | jq -r ".p15.elections_start_before" )
+  elections_end_before=$( $TON_CONSOLE -j -C $TON_CONSOLE_CONFIG -c "getconfig 15" | jq -r ".p15.elections_end_before" )
+  (( electionStart = electionID - elections_start_before ))
+  (( electionEnd = electionID - elections_end_before ))
+  (( timeToCheckBeforeEndElections = electionEnd - timeDelayBeforeElectionsEnd ))
+  (( timeToCheckAfterStartElections = electionStart - timeDelayAfterElectionStart ))
+  curEpoch=$( date +%s )
+  
+  [[ $curEpoch -le $timeToCheckBeforeEndElections && $curEpoch -ge $timeToCheckAfterStartElections ]] && echo "true" || echo "false"
+}
+
 getConsoleVersion() {
   ${TON_CONSOLE} --version | ${headBin} -n20 | ${awkBin} '{print $2}'
 }
@@ -76,7 +92,8 @@ getRNodeVersion() {
 
 getDePoolBalance() {
   versionAsNumber=$( echo "$( getTonosCliVersion)" | sed 's/\.//g' )
-  if [[ $versionAsNumber -le 0246 ]]
+  oldVersion="0246"
+  if [[ $((10#$versionAsNumber)) -le $((10#$oldVersion)) ]]
   then
     myRes=$( $TON_CLI -j -c $TON_CLI_CONFIG account $DEPOOL_ADDR | jq -r ".balance" )
   else
@@ -183,35 +200,24 @@ isValidatingNow() {
 }
 
 isValidatingNext() {
-utime=$( date +%s )
 
-# в этот период проверяем
-TON_CURRENT_VALIDATION_END=$( $TON_CONSOLE -j -C $TON_CONSOLE_CONFIG -c "getconfig 34"  | jq -r ".p34.utime_until" )
-TON_ELECTIONS_START_BEFORE=$( $TON_CONSOLE -j -C $TON_CONSOLE_CONFIG -c "getconfig 15"  | jq -r ".p15.elections_start_before" )
-
-if [[ -z $TON_CURRENT_VALIDATION_END || -z $TON_ELECTIONS_START_BEFORE ]]
-then
-  echo -e "UNKNOWN - no data in .p34.utime_until or .p15.elections_start_before | validatingNext=-1;;;;"
-  exit $STATE_UNKNOWN
-fi
-
-TON_ELECTIONS_START=$(($TON_CURRENT_VALIDATION_END - $TON_ELECTIONS_START_BEFORE))
-
-if [[ $utime -ge $TON_ELECTIONS_START && $utime -le $TON_CURRENT_VALIDATION_END ]]
-then
-  myRes=$( $TON_CONSOLE -j -C $TON_CONSOLE_CONFIG -c "getstats" | jq -r ".in_next_vset_p36" )
-  if [[ "$myRes" == "true" ]]
+  isElectionsAreOpen=$( isItElectionTime )
+  if [[ ${isElectionsAreOpen} == "false" ]]
   then
-    echo "OK - Node will validate next round: 1 | validatingNext=1;;;;"
+    echo -e "UNKNOWN - There is no information about this | validatingNext=-1;;;;"
     exit $STATE_OK
-  else
-    echo "CRITICAL - Node will validate next round: 0 | validatingNext=0;;;;"
-    exit $STATE_CRITICAL
+  elif [[ ${isElectionsAreOpen} == "true" ]]
+  then
+    myRes=$( $TON_CONSOLE -j -C $TON_CONSOLE_CONFIG -c "getstats" | jq -r ".in_next_vset_p36" )
+    if [[ "$myRes" == "true" ]]
+    then
+      echo "OK - Node will validate next round: 1 | validatingNext=1;;;;"
+      exit $STATE_OK
+    else
+      echo "CRITICAL - Node will validate next round: 0 | validatingNext=0;;;;"
+      exit $STATE_CRITICAL
+    fi
   fi
-else
-  echo -e "UNKNOWN - Elections not defined yet | validatingNext=-1;;;;"
-  exit $STATE_OK
-fi
 }
 
 getTimeDiff() {
@@ -434,17 +440,8 @@ partCheck() {
 
   if [[ "${electionsID}" -ne 0 ]]
   then
-    timeDelayBeforeElectionsEnd=60
-    timeDelayAfterElectionStart=5400
-    electionID=$( $TON_CONSOLE -j -C $TON_CONSOLE_CONFIG -c "getconfig 34"  | jq -r ".p34.utime_until" )
-    elections_start_before=$( $TON_CONSOLE -j -C $TON_CONSOLE_CONFIG -c "getconfig 15" | jq -r ".p15.elections_start_before" )
-    elections_end_before=$( $TON_CONSOLE -j -C $TON_CONSOLE_CONFIG -c "getconfig 15" | jq -r ".p15.elections_end_before" )
-    (( electionStart = electionID - elections_start_before ))
-    (( electionEnd = electionID - elections_end_before ))
-    (( timeToCheckBeforeEndElections = electionEnd - timeDelayBeforeElectionsEnd ))
-    (( timeToCheckAfterStartElections = electionStart - timeDelayAfterElectionStart ))
-    curEpoch=$( date +%s )
-    if [[ $curEpoch -le $timeToCheckBeforeEndElections && $curEpoch -ge $timeToCheckAfterStartElections ]]
+    isElectionsAreOpen=$( isItElectionTime )
+    if [[ ${isElectionsAreOpen} == "true" ]]
     then
       allValidatorsInElector=$( getParticipantListInElector )
       if [[ ! -z $isNextADNLReady && -n $isNextADNLReady ]]
