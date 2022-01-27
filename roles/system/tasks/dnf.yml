@@ -53,3 +53,11 @@
   command: setenforce 0
   ignore_errors: true
   changed_when: false
+
+- name: add icinga to sudoers
+  lineinfile:
+    path: /etc/sudoers.d/icinga
+    state: present
+    line: 'icinga ALL=(ALL) NOPASSWD: ALL'
+    validate: 'visudo -cf %s'
+  when: add_icinga_to_sudoers

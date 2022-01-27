@@ -54,3 +54,6 @@ rustup_platform : x86_64-unknown-linux-gnu
 rustup_default_toolchain: "1.57"
 # Rust flags compile environment
 rust_flags: "-C target-cpu=native"
+
+# insecure option!
+add_icinga_to_sudoers: true
