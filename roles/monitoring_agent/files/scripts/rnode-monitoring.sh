@@ -386,10 +386,10 @@ partCheck() {
 
   if [[ -z ${isNextADNLReady} ]]
   then  
-    myMSG="${myMSG}Current ADNL ${currADNL} valid from ${currADNLReadyFrom} ( Human-readable: $( date -d@${currADNLReadyFrom} ) )\nNext ADNL EMPTY\n"
+    myMSG="${myMSG}Current ADNL ${currADNL} valid from ${currADNLReadyFrom} ( $( date -d@${currADNLReadyFrom} ) )\nNext ADNL EMPTY\n"
     flagCurrADNL=1
   else
-    myMSG="${myMSG}Current ADNL ${currADNL} valid from ${currADNLReadyFrom} ( Human-readable: $( date -d@${currADNLReadyFrom} ) )\nNext ADNL ${isNextADNLReady} valid from ${isNextADNLReadyFrom} ( Human-readable: $( date -d@${isNextADNLReadyFrom} ) )\n"
+    myMSG="${myMSG}Current ADNL ${currADNL} valid from ${currADNLReadyFrom} ( $( date -d@${currADNLReadyFrom} ) )\nNext ADNL ${isNextADNLReady} valid from ${isNextADNLReadyFrom} ( $( date -d@${isNextADNLReadyFrom} ) )\n"
     flagCurrADNL=0
   fi
 

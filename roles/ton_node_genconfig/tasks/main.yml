@@ -220,8 +220,8 @@
 
 - name: Making Custler telegabot
   template:
-    src: "TlgChat.json.sh.j2"
-    dest: "{{ ton_node_scripts }}/TlgChat.json.sh"
+    src: "TlgChat.json.j2"
+    dest: "{{ ton_node_scripts }}/TlgChat.json"
     owner: "{{ ton_node_user }}"
     group: "{{ ton_node_group }}"
     mode: u=rwx,g=rx,o=

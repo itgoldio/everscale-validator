@@ -18,6 +18,7 @@
     force_genconfig: true
   vars_files:
     - vars/ton_node.yml
+    - vars/system.yml
   roles:
     - ton_node_genconfig
   tags: [ "never", "genconfig" ]
