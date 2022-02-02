@@ -125,7 +125,7 @@ ton_node_additional_contracts:
 ###
 
 wrk_dir: "/var"
-ton_wrk_dir: "$WRK_DIR/ton-work"
+node_log_filename: "node.log"
 
 # can be msig or depool
 stake_mode: depool
@@ -156,4 +156,9 @@ val_engine_console_port: "3030"
 telegram_bot_token: ""
 telegram_chat_id: ""
 
+# rustup_default_toolchain defined on system.yml
+rust_version: "{{ rustup_default_toolchain }}"
+boost_version: "1.76.0"
+min_tc_version: "0.24.11"
+min_rc_version: "0.1.255"
 
