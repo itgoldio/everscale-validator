@@ -497,10 +497,12 @@ flagP34Curr ${flagP34Curr} | flagP34Curr=${flagP34Curr};;;;\n
 flagNextInElector ${flagNextInElector:=-1} | flagNextInElector=${flagNextInElector:=-1};;;;\n
 flagCurrInElector ${flagCurrInElector:=-1} | flagCurrInElector=${flagCurrInElector:=-1};;;;\n
 "
-  # first time validate
-  [[ $flagCurrInElector -eq 1 ]] && exit $STATE_OK
-  # any other situations
-  [[ $flagNextInElector -eq 1 || $flagCurrInElector -eq 1 ]] && exit $STATE_CRITICAL || exit $STATE_OK
+  if [[ ${isElectionsAreOpen} == "true" ]]
+  then
+    [[ $flagNextInElector -eq 1 || $flagCurrInElector -eq 1 ]] && exit $STATE_CRITICAL || exit $STATE_OK
+  else
+    exit $STATE_OK
+  fi
 }
 
 
