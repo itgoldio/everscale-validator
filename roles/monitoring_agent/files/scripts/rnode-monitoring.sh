@@ -21,7 +21,7 @@ Depool_addr=$DEPOOL_ADDR
 Validator_addr=$VALIDATOR_WALLET_ADDR
 
 timeDelayBeforeElectionsEnd=60
-timeDelayAfterElectionStart=5400
+timeDelayAfterElectionStart=1800
 
 # utils
 bcBin=$( which bc )
@@ -72,7 +72,7 @@ isItElectionTime() {
   (( electionStart = electionID - elections_start_before ))
   (( electionEnd = electionID - elections_end_before ))
   (( timeToCheckBeforeEndElections = electionEnd - timeDelayBeforeElectionsEnd ))
-  (( timeToCheckAfterStartElections = electionStart - timeDelayAfterElectionStart ))
+  (( timeToCheckAfterStartElections = electionStart + timeDelayAfterElectionStart ))
   curEpoch=$( date +%s )
   
   [[ $curEpoch -le $timeToCheckBeforeEndElections && $curEpoch -ge $timeToCheckAfterStartElections ]] && echo "true" || echo "false"
@@ -499,8 +499,25 @@ flagCurrInElector ${flagCurrInElector:=-1} | flagCurrInElector=${flagCurrInElect
 "
   if [[ ${isElectionsAreOpen} == "true" ]]
   then
-    [[ $flagNextInElector -eq 1 || $flagCurrInElector -eq 1 ]] && exit $STATE_CRITICAL || exit $STATE_OK
+    if [[ $flagNextInElector -eq 1 ]]
+    then
+      # next and current ADNL not ready - exit crit
+      if [[ $flagCurrInElector -eq 1 ]]
+      then
+        echo -e "Current ADNL ( first time validating ) not present in Elector\nNext ADNL not present in Elector"
+        exit $STATE_CRITICAL 
+      fi
+    # next adnl ready - exit ok
+    elif [[ $flagNextInElector -eq 0 ]]
+    then
+      exit $STATE_OK
+    # next adnl not ready but curr adnl ready - exit ok ( first time validate )
+    elif [[ $flagCurrInElector -eq 0 ]]
+    then
+      exit $STATE_OK
+    fi
   else
+    # elections not open - exit ok
     exit $STATE_OK
   fi
 }
