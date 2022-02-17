@@ -249,7 +249,7 @@ If you preffer automatically deploy accounts by scripts, start reading from [her
 ## Support
 We can help you in telegram chats
 - RU: https://t.me/itgoldio_support_ru
-- EN: https://t.me/itgoldio_support_en
+- EN: https://t.me/tgoldio_support_en
 
 ## Changelog
 Here: [changelog.md](./changelog.md)
