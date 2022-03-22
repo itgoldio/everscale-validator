@@ -246,10 +246,21 @@ Script return info about next validation round.
 In this build we use [Custler's scripts](https://github.com/Custler/main.evs.dev)
 If you preffer automatically deploy accounts by scripts, start reading from [here](https://github.com/Custler/main.evs.dev#5-deploy-accounts)
 
+## Simple steps to deploy working validator
+
+Based on Custler's scripts and using msig:
+
+generate pubKey:
+tonos-cli -c /var/ton-work/rnode/configs/tonos-cli.conf.json genpubkey SEED-PHRASE
+
+./Prep-Msig.sh Tik Safe 1 0
+./Prep-Msig.sh $HOSTNAME Safe 1 -1
+./Prep-DePool.sh
+
 ## Support
 We can help you in telegram chats
 - RU: https://t.me/itgoldio_support_ru
-- EN: https://t.me/tgoldio_support_en
+- EN: https://t.me/itgoldio_support_en
 
 ## Changelog
 Here: [changelog.md](./changelog.md)

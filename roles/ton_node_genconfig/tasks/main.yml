@@ -15,7 +15,7 @@
     - "{{ ton_rnode_config_dir }}/config.json"
     - "{{ ton_rnode_config_dir }}/console.json"
     - "{{ ton_rnode_config_dir }}/console_config.json"
-  when: configDirNonEmpty.matched == 0 or (force_genconfig is defined and force_genconfig == True)
+  when: configDirNonEmpty.matched <= 3 or (force_genconfig is defined and force_genconfig == True)
 
 - name: Check TON user (if not exist)
   user:
@@ -45,7 +45,7 @@
     owner: "{{ ton_node_user }}"
     group: "{{ ton_node_group }}"
     mode: u=rw,g=r,o=
-  when: configDirNonEmpty.matched == 0 or (force_genconfig is defined and force_genconfig == True)
+  when: configDirNonEmpty.matched <= 3 or (force_genconfig is defined and force_genconfig == True)
   notify: ton_systemd
 
 - name: Config tonos-cli
@@ -56,7 +56,7 @@
     - "./tonos-cli config endpoint reset"
     - "./tonos-cli config endpoint add {{ ton_node_global_config_URL_list[ton_node_config].DAPP_address }} {{ ton_node_global_config_URL_list[ton_node_config].DAPP_endpoints }}"
     - "./tonos-cli --url {{ ton_node_global_config_URL_list[ton_node_config].DAPP_address }} config"
-  when: configDirNonEmpty.matched == 0 or (force_genconfig is defined and force_genconfig == True)
+  when: configDirNonEmpty.matched <= 3 or (force_genconfig is defined and force_genconfig == True)
 
 - name: Copy tonos-cli.conf.json to configs dir
   copy:
@@ -66,7 +66,7 @@
     group: "{{ ton_node_group }}"
     mode: u=rw,g=r,o=
     remote_src: yes
-  when: configDirNonEmpty.matched == 0 or (force_genconfig is defined and force_genconfig == True)
+  when: configDirNonEmpty.matched <= 3 or (force_genconfig is defined and force_genconfig == True)
 
 - name: "Set lifetime to 600"
   shell: "{{ item }}"
@@ -75,7 +75,7 @@
   loop:
     - 'jq ".config.lifetime=600" "{{ ton_rnode_config_dir }}/tonos-cli.conf.json" > {{ ton_rnode_config_dir }}/tonos-cli.conf_tmp.json'
     - 'cat {{ ton_rnode_config_dir }}/tonos-cli.conf_tmp.json > {{ ton_rnode_config_dir }}/tonos-cli.conf.json'
-  when: configDirNonEmpty.matched == 0 or (force_genconfig is defined and force_genconfig == True)
+  when: configDirNonEmpty.matched <= 3 or (force_genconfig is defined and force_genconfig == True)
 
 - name: Remove tonos-cli.conf.json in tools dir
   file:
@@ -92,7 +92,7 @@
     #creates: "{{ ton_rnode_config_dir }}/{{ ansible_hostname }}_client_keys.json"
   become: yes
   become_user: "{{ ton_node_user }}"
-  when: configDirNonEmpty.matched == 0 or (force_genconfig is defined and force_genconfig == True)
+  when: configDirNonEmpty.matched <= 3 or (force_genconfig is defined and force_genconfig == True)
 
 - name: Generate ton_node key config (RUST)
   shell: "{{ ton_node_bin_dir }}/ton_node --configs {{ ton_rnode_config_dir }} --ckey \"$(jq -c .public {{ ton_rnode_config_dir }}/{{ ansible_hostname }}_client_keys.json)\" &"
@@ -104,7 +104,7 @@
   become_user: "{{ ton_node_user }}"
   register: ton_node_key_generated
   notify: ton_systemd
-  when: configDirNonEmpty.matched == 0 or (force_genconfig is defined and force_genconfig == True)
+  when: configDirNonEmpty.matched <= 3 or (force_genconfig is defined and force_genconfig == True)
 
 - name: Wait for console_config.json creation (RUST)
   wait_for:
@@ -127,7 +127,7 @@
     - "jq '.control_server.address = \"127.0.0.1:{{ ton_node_console_port }}\"' {{ ton_rnode_config_dir }}/config_tmp.json > {{ ton_rnode_config_dir }}/config.json"
     - "jq '.server_address = \"127.0.0.1:{{ ton_node_console_port }}\"' {{ ton_rnode_config_dir }}/console_config.json > {{ ton_rnode_config_dir }}/console_config_tmp.json"
     - 'cat {{ ton_rnode_config_dir }}/console_config_tmp.json > {{ ton_rnode_config_dir }}/console_config.json'
-  when: configDirNonEmpty.matched == 0 or (force_genconfig is defined and force_genconfig == True)
+  when: configDirNonEmpty.matched <= 3 or (force_genconfig is defined and force_genconfig == True)
 
 - name: Copy console_template.json (RUST)
   copy:
@@ -137,7 +137,7 @@
     owner: "{{ ton_node_user }}"
     group: "{{ ton_node_group }}"
     mode: u=rw,g=r,o=
-  when: configDirNonEmpty.matched == 0 or (force_genconfig is defined and force_genconfig == True)
+  when: configDirNonEmpty.matched <= 3 or (force_genconfig is defined and force_genconfig == True)
 
 - name: Generate console.json config (RUST)
   shell: "{{ item }}"
@@ -148,7 +148,7 @@
   loop:
     - "jq \".config = $(cat {{ ton_rnode_config_dir }}/console_config.json)\" {{ ton_rnode_config_dir }}/console_template.json > {{ ton_rnode_config_dir }}/console_tmp.json"
     - "jq \".config.client_key = $(jq .private {{ ton_rnode_config_dir }}/{{ ansible_hostname }}_client_keys.json)\" {{ ton_rnode_config_dir }}/console_tmp.json > {{ ton_rnode_config_dir }}/console.json"
-  when: configDirNonEmpty.matched == 0 or (force_genconfig is defined and force_genconfig == True)
+  when: configDirNonEmpty.matched <= 3 or (force_genconfig is defined and force_genconfig == True)
 
 - name: Delete temp file (RUST)
   file:
@@ -171,7 +171,7 @@
     - "{{ ton_rnode_config_dir }}/{{ ansible_hostname }}_client_keys.json"
     - "{{ ton_rnode_config_dir }}/config.json"
     - "{{ ton_rnode_config_dir }}/console.json"
-  when: configDirNonEmpty.matched == 0 or (force_genconfig is defined and force_genconfig == True)
+  when: configDirNonEmpty.matched <= 3 or (force_genconfig is defined and force_genconfig == True)
 
 - name: Firewall block
   block:

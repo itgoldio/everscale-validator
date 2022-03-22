@@ -134,8 +134,8 @@
     RUSTFLAGS: "{{ rust_flags }}"
     RUST_VERSION: "{{ rust_version.stdout }}"
     GC_TON_NODE: "{{ ton_node_sources.after }}"
-    ZSTD_LIB_DIR: "{% if ansible_pkg_mgr == 'dnf' %}/usr/lib64{% elif ansible_pkg_mgr == 'apt' %}/usr/lib/x86_64-linux-gnu{% endif %}"
-    PKG_CONFIG_PATH: /usr/local/lib/pkgconfig
+    ZSTD_LIB_DIR: "{% if ansible_pkg_mgr == 'dnf' %}/usr/local/lib{% elif ansible_pkg_mgr == 'apt' %}/usr/lib/x86_64-linux-gnu{% endif %}"
+    PKG_CONFIG_PATH: "/usr/local/lib/pkgconfig"
 
 - name: Build ton node tools
   block:
@@ -146,6 +146,8 @@
   when: ton_node_tools_sources.changed or ton_node_tools_force_recompile
   environment:
     RUSTFLAGS: "{{ rust_flags }}"
+    ZSTD_LIB_DIR: "{% if ansible_pkg_mgr == 'dnf' %}/usr/local/lib{% elif ansible_pkg_mgr == 'apt' %}/usr/lib/x86_64-linux-gnu{% endif %}"
+    PKG_CONFIG_PATH: "/usr/local/lib/pkgconfig"
 
 - name: Build tonos cli
   block:
@@ -156,6 +158,8 @@
   when: tonos_cli_sources.changed or tonos_cli_force_recompile
   environment:
     RUSTFLAGS: "{{ rust_flags }}"
+    ZSTD_LIB_DIR: "{% if ansible_pkg_mgr == 'dnf' %}/usr/local/lib{% elif ansible_pkg_mgr == 'apt' %}/usr/lib/x86_64-linux-gnu{% endif %}"
+    PKG_CONFIG_PATH: "/usr/local/lib/pkgconfig"
 
 - name: Build tvm linker
   block:
@@ -166,3 +170,5 @@
   when: tvm_linker_sources.changed or tvm_linker_force_recompile
   environment:
     RUSTFLAGS: "{{ rust_flags }}"
+    ZSTD_LIB_DIR: "{% if ansible_pkg_mgr == 'dnf' %}/usr/local/lib{% elif ansible_pkg_mgr == 'apt' %}/usr/lib/x86_64-linux-gnu{% endif %}"
+    PKG_CONFIG_PATH: "/usr/local/lib/pkgconfig"
