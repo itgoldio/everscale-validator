@@ -218,6 +218,36 @@
     mode: u=rwx,g=rx,o=
   when: ton_custler_scripts_enabled
 
+- name: read telega-json file
+  shell: cat "{{ ton_node_scripts }}/TlgChat.json"
+  register: result
+
+- name: readed telega-bot file to fact
+  set_fact:
+    jsondata: "{{ result.stdout | from_json }}"
+
+- name: read telegram_bot_token
+  set_fact:
+    telegram_bot_token_from_file: "{{ jsondata | json_query(jmesquery) }}"
+  vars:
+    jmesquery: 'telegram_bot_token'
+
+- name: read telegram_chat_id
+  set_fact:
+    telegram_chat_id_from_file: "{{ jsondata | json_query(jmesquery) }}"
+  vars:
+    jmesquery: 'telegram_chat_id'
+
+- name: check bot id
+  debug:
+    msg: "bot id already set: {{ telegram_bot_token_from_file }}"
+  when: telegram_bot_token_from_file|length > 0
+
+- name: check chat id
+  debug:
+    msg: "chat id already set: {{ telegram_chat_id_from_file }}"
+  when: telegram_chat_id_from_file|length > 0
+
 - name: Making Custler telegabot
   template:
     src: "TlgChat.json.j2"
@@ -225,4 +255,4 @@
     owner: "{{ ton_node_user }}"
     group: "{{ ton_node_group }}"
     mode: u=rwx,g=rx,o=
-  when: ton_custler_scripts_enabled
+  when: ton_custler_scripts_enabled and ( telegram_chat_id_from_file|length < 2 and telegram_bot_token_from_file|length < 2  )
