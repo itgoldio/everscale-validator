@@ -71,6 +71,12 @@ ton_node_external_db_enabled: false
 # Compile with sha20native feature
 ton_node_sha2_native_enabled: true
 
+ton_node_solc_github_repo: "https://github.com/tonlabs/TON-Solidity-Compiler.git"
+ton_node_solc_github_commit_id: "master"
+
+ton_node_contracts_github_repo: "https://github.com/tonlabs/ton-labs-contracts.git"
+ton_node_contracts_github_commit_id: "master"
+
 # Default user and group names
 ton_node_user: "xnode"
 ton_node_group: "xnode"
@@ -131,8 +137,9 @@ node_log_filename: "node.log"
 # can be msig or depool
 stake_mode: depool
 elector_type: fift
-delay_time: 10
-time_shift: 600
+delay_time: 0
+time_shift: 450
+lc_send_msg_timeout: 10
 
 # depool vars
 validator_assurance_in_tokens: 100000
@@ -146,7 +153,6 @@ tik_replanish_amount: 10
 msig_fix_stake: 45000
 val_acc_init_bal: 99000
 val_acc_reserved: 50
-lc_send_msg_timeout: 60
 
 liteserver_ip: "127.0.0.1"
 liteserver_port: "3031"
@@ -163,3 +169,6 @@ boost_version: "1.76.0"
 min_tc_version: "0.24.11"
 min_rc_version: "0.1.255"
 
+# if you suggest auto-update via Custler's scripts, then set true
+ton_node_binaries_autoupdate: "false"
+ton_node_scripts_autoupdate: "false"
