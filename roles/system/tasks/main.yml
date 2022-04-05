@@ -51,6 +51,22 @@
 - name: Include os specific tasks
   include_tasks: "{{ ansible_pkg_mgr }}.yml"
 
+- name: Upgrade pip package
+  pip:
+    name:
+      - pip
+    state: latest
+  vars:
+    ansible_python_interpreter: python3
+
+- name: Install python packages
+  pip:
+    name:
+      - jmespath
+    state: latest
+  vars:
+    ansible_python_interpreter: python3
+
 - name: Linux PAM limits | add or modify nofile limits
   pam_limits:
     domain: "{{ ton_node_user }}"

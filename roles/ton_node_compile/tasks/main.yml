@@ -164,9 +164,11 @@
 - name: Build tvm linker
   block:
     - name: Update repo deps | tvm linker
-      command: '{{ ansible_env.HOME }}/.cargo/bin/cargo update --manifest-path {{ ton_node_src_dir }}/tvm_linker/tvm_linker/Cargo.toml'
+      # command: '{{ ansible_env.HOME }}/.cargo/bin/cargo update --manifest-path {{ ton_node_src_dir }}/tvm_linker/tvm_linker/Cargo.toml'
+      command: '{{ ansible_env.HOME }}/.cargo/bin/cargo update --manifest-path {{ ton_node_src_dir }}/tvm_linker/Cargo.toml'
     - name: Build repo | tvm linker
-      command: '{{ ansible_env.HOME }}/.cargo/bin/cargo build --manifest-path {{ ton_node_src_dir }}/tvm_linker/tvm_linker/Cargo.toml --target-dir {{ ton_node_src_dir }} --release'
+      # command: '{{ ansible_env.HOME }}/.cargo/bin/cargo build --manifest-path {{ ton_node_src_dir }}/tvm_linker/tvm_linker/Cargo.toml --target-dir {{ ton_node_src_dir }} --release'
+      command: '{{ ansible_env.HOME }}/.cargo/bin/cargo build --manifest-path {{ ton_node_src_dir }}/tvm_linker/Cargo.toml --target-dir {{ ton_node_src_dir }} --release'
   when: tvm_linker_sources.changed or tvm_linker_force_recompile
   environment:
     RUSTFLAGS: "{{ rust_flags }}"

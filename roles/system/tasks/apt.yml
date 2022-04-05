@@ -13,9 +13,11 @@
       - dnsutils
       - jq
       - acl
-#These 2 packets are need to complile node v.47.83+        
+      #These 2 packets are need to complile node v.47.83+
       - google-perftools
       - libgoogle-perftools-dev
+      - python3
+      - python3-pip
     state: latest
     update_cache: yes
     cache_valid_time: 3600

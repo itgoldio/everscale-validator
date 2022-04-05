@@ -1,3 +1,8 @@
+## 2.1
+ - Customizing [Custler](https://github.com/FreeTON-Network/custler.uninode.git) scripts and vars (vars/[ton_node.yml](./vars/ton_node.yml))
+ - New tag `genconfig`
+ - Fixed rust version
+ - Fixed zstdlib version
 ## 2.0
 - Added RFLD network
 - Added [Custler](https://github.com/FreeTON-Network/custler.uninode.git) scripts

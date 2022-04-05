@@ -27,9 +27,11 @@
       - jq
       - bash-completion
       - python3-libselinux
-#These 2 packets are need to complile node v.47.83+      
+      # These 2 packets are need to complile node v.47.83+      
       - gperftools 
       - gperftools-devel
+      - python3
+      - python3-pip
     state: latest
 
 - block:
