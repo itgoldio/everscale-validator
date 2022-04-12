@@ -172,3 +172,4 @@ min_rc_version: "0.1.255"
 # if you suggest auto-update via Custler's scripts, then set true
 ton_node_binaries_autoupdate: "false"
 ton_node_scripts_autoupdate: "false"
+newReleaseSndMsg: "false"
