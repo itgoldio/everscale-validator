@@ -1,3 +1,5 @@
+## 2.2
+ - Customizing [Custler](https://github.com/FreeTON-Network/custler.uninode.git) scripts and vars (vars/[ton_node.yml](./vars/ton_node.yml))
 ## 2.1
  - Customizing [Custler](https://github.com/FreeTON-Network/custler.uninode.git) scripts and vars (vars/[ton_node.yml](./vars/ton_node.yml))
  - New tag `genconfig`
