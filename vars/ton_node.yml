@@ -16,17 +16,19 @@ ton_node_global_config_URL_list:
   main:
     config_URL: "https://raw.githubusercontent.com/tonlabs/main.ton.dev/master/configs/ton-global.config.json"
     DAPP_address: "https://main.ton.dev"
-    DAPP_endpoints: "https://eri01.main.everos.dev,https://gra01.main.everos.dev,https://gra02.main.everos.dev,https://lim01.main.everos.dev,https://rbx01.main.everos.dev,https://main2.ton.dev,https://main3.ton.dev,https://main4.ton.dev"
+    DAPP_endpoints: "https://eri01.main.everos.dev/,https://gra01.main.everos.dev/,https://gra02.main.everos.dev/,https://lim01.main.everos.dev/,https://rbx01.main.everos.dev/"
 
   net:
     config_URL: "https://raw.githubusercontent.com/tonlabs/net.ton.dev/master/configs/ton-global.config.json"
     DAPP_address: "https://net.ton.dev"
-    DAPP_endpoints: "https://net1.ton.dev,https://net5.ton.dev"
+    DAPP_endpoints: "https://eri01.net.everos.dev/,https://rbx01.net.everos.dev/,https://gra01.net.everos.dev/"
+
   fld:
     config_URL: "https://raw.githubusercontent.com/FreeTON-Network/fld.ton.dev/main/configs/fld.ton.dev/ton-global.config.json"
     DAPP_address: "https://gql.custler.net"
     DAPP_endpoints: "https://gql.custler.net"
-  rfld:
+
+rfld:
     config_URL: "https://raw.githubusercontent.com/FreeTON-Network/custler.uninode/main/configs/rfld.ton.dev/ton-global.config.json"
     DAPP_address: "https://rfld.ton.dev"
     DAPP_endpoints: "https://rfld-dapp01.ds1.itgold.io"
