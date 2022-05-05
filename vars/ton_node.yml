@@ -162,16 +162,18 @@ val_engine_console_ip: "127.0.0.1"
 val_engine_console_port: "3030"
 
 # Custler's telegabot
-telegram_bot_token: ""
-telegram_chat_id: ""
+"telegram_bot_token": ""
+"telegram_chat_id": ""
 
 # rustup_default_toolchain defined on system.yml
 rust_version: "{{ rustup_default_toolchain }}"
 boost_version: "1.76.0"
-min_tc_version: "0.24.11"
-min_rc_version: "0.1.255"
+min_tc_version: "0.24.60"
+min_rc_version: "0.1.261"
 
 # if you suggest auto-update via Custler's scripts, then set true
 ton_node_binaries_autoupdate: "false"
 ton_node_scripts_autoupdate: "false"
 newReleaseSndMsg: "false"
+
+# restoreDB: true

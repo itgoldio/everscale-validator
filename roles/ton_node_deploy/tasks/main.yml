@@ -128,3 +128,45 @@
     group: "{{ ton_node_group }}"
     mode: u=rw,g=r,o=
   loop: "{{ ton_node_additional_contracts | list | unique }}"
+
+
+- block:
+  - name: set restore_db true to config
+    shell: "{{ item }}"
+    become: yes
+    become_user: "{{ ton_node_user }}"
+    loop:
+      - 'jq ".restore_db = true" "{{ ton_rnode_config_dir }}/config.json" > "{{ ton_rnode_config_dir }}/config.json_tmp"'
+      - 'cat {{ ton_rnode_config_dir }}/config.json_tmp > {{ ton_rnode_config_dir }}/config.json'
+
+  - name: restart node
+    systemd:
+      daemon_reload: true
+      name: "{{ ton_node_service_name  }}"
+      enabled: "{{ ton_node_service_autostart }}"
+      state: restarted
+
+  - name: get timediff from console 
+    shell: |
+      {{ ton_node_tools_dir }}/console -j -C {{ ton_rnode_config_dir }}/console.json -c getstats | jq ".timediff"
+    args:
+      executable: /bin/bash
+    retries: 300
+    delay: 60
+    until: time_diff_console.stdout|int < 6 and time_diff_console.stdout != 'null' and time_diff_console.stdout != ''
+    register: time_diff_console
+
+  - name: set restore_db false to config
+    shell: "{{ item }}"
+    become: yes
+    become_user: "{{ ton_node_user }}"
+    loop:
+      - 'jq ".restore_db = false" "{{ ton_rnode_config_dir }}/config.json" > "{{ ton_rnode_config_dir }}/config.json_tmp"'
+      - 'cat {{ ton_rnode_config_dir }}/config.json_tmp {{ ton_rnode_config_dir }}/config.json'
+
+  - name: create file for Custler script
+    ansible.builtin.file:
+      path: "{{ ton_node_scripts }}/rnode_commit_5494f43_DB_Restored"
+      state: touch
+
+  when: restoreDB is defined and restoreDB == true

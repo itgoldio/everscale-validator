@@ -154,6 +154,8 @@ Edit the variable files vars/[ton_node.yml](./vars/ton_node.yml), vars/[system.y
 
 See the vars/[ton_node.yml](./vars/ton_node.yml), vars/[system.yml](./vars/system.yml) and vars/[monitoring.yml](./vars/monitoring.yml) files for more details
 
+If you want use restoredb parameter in config, just uncomment `restoreDB: true` in vars/[ton_node.yml](./vars/ton_node.yml)
+
 ---
 ## Usage
 By default, after deploying the everscale node it gets started automatically (change this behavior in vars/[ton_node.yml](./vars/ton_node.yml)).
