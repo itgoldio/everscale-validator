@@ -162,7 +162,7 @@
     become_user: "{{ ton_node_user }}"
     loop:
       - 'jq ".restore_db = false" "{{ ton_rnode_config_dir }}/config.json" > "{{ ton_rnode_config_dir }}/config.json_tmp"'
-      - 'cat {{ ton_rnode_config_dir }}/config.json_tmp {{ ton_rnode_config_dir }}/config.json'
+      - 'cat {{ ton_rnode_config_dir }}/config.json_tmp > {{ ton_rnode_config_dir }}/config.json'
 
   - name: create file for Custler script
     ansible.builtin.file:
