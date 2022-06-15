@@ -51,8 +51,6 @@ Validator on _RFLD-net_ needs about 32 GB RAM at least, 250 GB HDD and about 8 c
 5. Keys
 * If you already have keys, put it to `/home/<username>/ton-keys`
 
-* If you preffer automatically deploy keys by scripts, start reading from [here](https://github.com/Custler/main.evs.dev#5-deploy-accounts)
-
 generate pubKey:\
 `tonos-cli -c /var/ton-work/rnode/configs/tonos-cli.conf.json genpubkey SEED-PHRASE`
 
@@ -67,6 +65,9 @@ For participating in elections and validating, run script\
 This script set crontab
 
 That's it! You got fresh validator! Graz!
+
+* _If you preffer automatically deploy keys by scripts, start reading from_ [here](https://github.com/Custler/main.evs.dev#5-deploy-accounts)
+
 
 # Long instructions with detailed explanations
 
