@@ -18,4 +18,4 @@
   lineinfile:
     dest: /etc/profile.d/sh.local
     state: present
-    line: "PATH=$PATH:{{ ton_node_scripts }}:{{ ton_node_tools_dir }}"
+    line: "PATH=$PATH:{{ ton_node_scripts }}:{{ ever_node_tools_dir }}"

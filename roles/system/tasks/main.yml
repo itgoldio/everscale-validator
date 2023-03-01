@@ -1,30 +1,30 @@
 ---
 
-- name: Create TON group
+- name: Create EVERSCALE group
   group:
-    name: "{{ ton_node_group }}"
+    name: "{{ ever_node_group }}"
     state: present
 
-- name: Create TON user
+- name: Create EVERSCALE user
   user:
-    name: "{{ ton_node_user }}"
-    comment: "TON node user"
-    group: "{{ ton_node_group }}"
+    name: "{{ ever_node_user }}"
+    comment: "EVERSCALE node user"
+    group: "{{ ever_node_group }}"
     shell: /bin/bash
     state: present
-  register: ton_user_created
+  register: ever_user_created
 
 - name: Set home directory variable
   set_fact:
-    ton_node_user_home: "{{ ton_user_created.home }}"
+    ever_node_user_home: "{{ ever_user_created.home }}"
 
 - name: Create dirs
   file:
-    path: "{{ ton_node_work_dir }}"
+    path: "{{ ever_node_work_dir }}"
     state: directory
     mode: u=rwx,g=rx,o=
-    owner: "{{ ton_node_user }}"
-    group: "{{ ton_node_group }}"
+    owner: "{{ ever_node_user }}"
+    group: "{{ ever_node_group }}"
   when: not additional_disk_mounted
 
 - name: Create dirs (if used additional disk)
@@ -32,16 +32,16 @@
     path: "{{ additional_mount }}"
     state: directory
     mode: u=rwx,g=rx,o=
-    owner: "{{ ton_node_user }}"
-    group: "{{ ton_node_group }}"
-  when: additional_disk_mounted and ton_user_created
+    owner: "{{ ever_node_user }}"
+    group: "{{ ever_node_group }}"
+  when: additional_disk_mounted and ever_user_created
 
 - name: Create symbolic link (if used additional disk)
   file:
     src: "{{ additional_mount }}"
-    dest: "{{ ton_node_work_dir }}"
+    dest: "{{ ever_node_work_dir }}"
     state: link
-  when: additional_disk_mounted and ton_user_created
+  when: additional_disk_mounted and ever_user_created
 
 - name: Set timezone to "{{ timezone }}"
   timezone:
@@ -69,7 +69,7 @@
 
 - name: Linux PAM limits | add or modify nofile limits
   pam_limits:
-    domain: "{{ ton_node_user }}"
+    domain: "{{ ever_node_user }}"
     limit_type: "{{ item.limit_type }}"
     limit_item: "{{ item.limit_item }}"
     value: "{{ item.value }}"
@@ -94,8 +94,8 @@
     value: "{{ item.value }}"
     sysctl_set: true
     state: present
-    sysctl_file: "/etc/sysctl.d/99-ton.conf"
+    sysctl_file: "/etc/sysctl.d/99-everscale.conf"
     reload: true
-  loop: "{{ sysctl_conf.ton_node | list | unique }}"
+  loop: "{{ sysctl_conf.ever_node | list | unique }}"
   ignore_errors: true
   when: sysctl_set|bool and sysctl_conf | length > 0

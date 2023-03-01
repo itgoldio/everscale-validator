@@ -1,0 +1,8 @@
+---
+- name: Enable and start everscale node systemd service
+  systemd:
+    daemon_reload: true
+    name: "{{ ever_node_service_name  }}"
+    enabled: "{{ ever_node_service_autostart }}"
+    state: "{{ ever_node_service_state }}"
+  listen: ever_systemd

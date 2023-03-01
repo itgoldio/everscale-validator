@@ -271,7 +271,7 @@ calcStake() {
 }
 
 getCurrentADNL() {
-  allKeysFromConfig=$( cat $TON_NODE_CONFIG | jq .validator_keys )
+  allKeysFromConfig=$( cat $ever_node_config | jq .validator_keys )
   [[ "${allKeysFromConfig}" == "null" ]] && echo "null" && return
   elections0=$( echo $allKeysFromConfig | jq -r .[0].election_id )
   adnlKey0=$( echo $allKeysFromConfig | jq -r .[0].validator_adnl_key_id )

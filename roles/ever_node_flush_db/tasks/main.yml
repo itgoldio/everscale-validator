@@ -1,0 +1,19 @@
+---
+
+- name: Remove generated earlier configs and flush db
+  block:
+    - name: "Stop {{ ever_node_service_name }} service"
+      service:
+        name: "{{ ever_node_service_name }}"
+        state: stopped
+    - name: Delete old configs and flush db
+      file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "{{ ever_node_config_dir }}/config.json"
+        - "{{ ever_node_config_dir }}/console.json"
+        - "{{ ever_node_config_dir }}/console_config.json"
+        - "{{ ever_node_db_dir }}"
+        - "{{ ever_node_src_dir }}/release"
+        - "{{ ever_node_src_dir }}/ever_node"

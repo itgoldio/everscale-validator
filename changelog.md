@@ -1,3 +1,6 @@
+## 3.0
+ - Some playbook fixes
+ - Rebranding to everscale (from TON)
 ## 2.2
  - Customizing [Custler](https://github.com/FreeTON-Network/custler.uninode.git) scripts and vars (vars/[ton_node.yml](./vars/ton_node.yml))
 ## 2.1
@@ -32,7 +35,7 @@
 - fix scripts according tonos-cli changes
 - ability to set custom DAPP server
 - log collecting improvements
-- new freeton_node build envs
+- new ever_node build envs
 
 ## 1.4.8
 - add -m flag to ton-node-validate-current.sh and ton-node-validate-next.sh

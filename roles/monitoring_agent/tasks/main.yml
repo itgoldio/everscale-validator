@@ -3,10 +3,10 @@
 - name: Include os specific tasks
   include_tasks: "{{ ansible_pkg_mgr }}.yml"
 
-- name: Add telegraf user to ton group
+- name: Add telegraf user to everscale group
   user:
     name: telegraf
-    groups: "{{ ton_node_group }}"
+    groups: "{{ ever_node_group }}"
     append: yes
   ignore_errors: yes
 
@@ -26,10 +26,10 @@
     group: telegraf
   notify: restart_telegraf
 
-- name: Copy telegraf ton config
+- name: Copy telegraf everscale config
   template:
-    src: "telegraf_freeton.conf.j2"
-    dest: "/etc/telegraf/telegraf.d/telegraf_freeton.conf"
+    src: "telegraf_everscale.conf.j2"
+    dest: "/etc/telegraf/telegraf.d/telegraf_everscale.conf"
   notify: restart_telegraf
 
 - name: Fix telegraf dirs own
@@ -42,12 +42,12 @@
   loop:
     - "/etc/telegraf"
 
-- name: Copy ton-env file
+- name: Copy ever-env file
   template:
-    src: "ton-env.j2"
-    dest: "{{ ton_node_scripts }}/ton-env.sh"
-    owner: "{{ ton_node_user }}"
-    group: "{{ ton_node_group }}"
+    src: "ever-env.j2"
+    dest: "{{ ton_node_scripts }}/ever-env.sh"
+    owner: "{{ ever_node_user }}"
+    group: "{{ ever_node_group }}"
     mode: u=rwx,g=rx,o=
 
 - name: Copy monitoring scripts
@@ -55,5 +55,5 @@
     src: "scripts/"
     dest: "{{ ton_node_scripts }}/"
     mode: u=rwx,g=rx,o=
-    owner: "{{ ton_node_user }}"
-    group: "{{ ton_node_group }}"
+    owner: "{{ ever_node_user }}"
+    group: "{{ ever_node_group }}"

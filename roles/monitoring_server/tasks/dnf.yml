@@ -19,7 +19,7 @@
     gpgkey: https://download.docker.com/linux/centos/gpg
     enabled: yes
     
-- name: Install docker and it's dependencies
+- name: Install docker and dependencies
   dnf:
     name:        
       - docker-ce
