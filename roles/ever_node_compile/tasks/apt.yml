@@ -1,4 +1,4 @@
-- name: Install freeton compile dependencies
+- name: Install everscale compile dependencies
   apt:
     name:
       - git
@@ -52,12 +52,12 @@
     dest: /etc/environment
     state: present
     backrefs: yes
-    regexp: 'PATH=(["]*)((?!.*?{{ ton_node_scripts }}:{{ ton_node_tools_dir }}).*?)(["]*)$'
-    line: "PATH=\\1\\2:{{ ton_node_scripts }}:{{ ton_node_tools_dir }}\\3"
+    regexp: 'PATH=(["]*)((?!.*?{{ ton_node_scripts }}:{{ ever_node_src_dir }}).*?)(["]*)$'
+    line: "PATH=\\1\\2:{{ ton_node_scripts }}:{{ ever_node_src_dir }}\\3"
   when: ansible_facts['distribution'] == "Ubuntu"
 
 - name: Add {{ ton_node_scripts }} to PATH env
   template:
-    src: "ton_env.sh.j2"
-    dest: "/etc/profile.d/ton_env.sh"
+    src: "ever_env.sh.j2"
+    dest: "/etc/profile.d/ever_env.sh"
   when: ansible_facts['distribution'] == "Debian"

@@ -1,0 +1,234 @@
+- name: Create everscale dirs
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ ever_node_user }}"
+    group: "{{ ever_node_group }}"
+    mode: u=rwx,g=rx,o=
+  loop:
+    - "{{ ever_node_src_dir }}"
+    - "{{ ever_node_contracts_dir }}"
+    - "{{ ever_node_keys }}"
+    - "{{ ton_node_scripts }}"
+    - "{{ ever_node_election }}"
+    - "{{ ever_node_election_history }}"
+    - "{{ ever_rnode_work_dir }}"
+    - "{{ ever_node_log_dir }}"
+    - "{{ ever_node_config_dir }}"
+    - "{{ ever_node_db_dir }}"
+
+- name: Set chmod to directories for compatibility
+  file:
+    path: "{{ item }}"
+    owner: "{{ ever_node_user }}"
+    group: "{{ ever_node_group }}"
+    mode: '0770'
+  loop:
+    - "{{ ton_node_scripts }}"
+    - "{{ ever_node_election }}"
+
+- name: Create everscale keys dir
+  file:
+    path: "{{ ever_node_keys }}"
+    state: directory
+    owner: "{{ ever_node_user }}"
+    group: "{{ ever_node_group }}"
+    mode: u=rwx,g=rx,o=
+
+- name: Include os specific tasks
+  include_tasks: "{{ ansible_pkg_mgr }}.yml"
+
+- name: Stats libzstd.so
+  stat:
+    path: "/usr/local/lib/libzstd.so.{{ zstd_version }}"
+  register: libzstd_exists
+
+- name: Download and extract zstd sources
+  unarchive:
+    src: 'https://github.com/facebook/zstd/releases/download/v{{ zstd_version }}/zstd-{{ zstd_version }}.tar.gz'
+    dest: /usr/local/src
+    remote_src: yes
+  when: not libzstd_exists.stat.exists
+
+- name: Compile zstd
+  command: 'make install'
+  args:
+    chdir: '/usr/local/src/zstd-{{ zstd_version }}'
+  when: not libzstd_exists.stat.exists
+
+- name: Download Rust init
+  get_url:
+    url: '{{ rustup_mirror }}/{{ rustup_platform }}/rustup-init'
+    dest: '/usr/local/bin/rustup-init'
+    mode: u=rwx,g=rx,o=
+
+- name: Install Rust
+  command: '/usr/local/bin/rustup-init -y --default-toolchain {{ rustup_default_toolchain }}'
+
+- name: Get Rust version
+  command: '{{ ansible_env.HOME }}/.cargo/bin/rustc -V'
+  changed_when: false
+  register: rust_version
+
+- name: Get EVER node sources
+  git:
+    repo: "{{ ever_node_github_repo }}"
+    dest: "{{ ever_node_src_dir }}/ever_node"
+    version: "{{ ever_node_github_commit_id }}"
+    force: true
+  register: ever_node_sources
+
+- name: Updating EVER node submodules
+  shell: |
+    set -euo pipefail
+    git submodule init
+    git submodule update --recursive
+    git submodule foreach 'git submodule init'
+    git submodule foreach 'git submodule update  --recursive'
+  args:
+    executable: "/bin/bash"
+    chdir: "{{ ever_node_src_dir }}/ever_node"
+
+- name:  EVER node add features
+  blockinfile: 
+    path: "{{ ever_node_src_dir }}/ever_node/Cargo.toml"
+    marker: "### ANSIBLE BLOCKINFILE 1 ####"
+    insertafter: '\[features\]'
+    block:  |
+      sha2-native = ['sha2/asm', 'ed25519-dalek/asm']
+  when: ever_node_sha2_native_enabled
+
+- name:  EVER node add dependencies
+  blockinfile: 
+    path: "{{ ever_node_src_dir }}/ever_node/Cargo.toml"
+    marker: "### ANSIBLE BLOCKINFILE 2 ####"
+    insertafter: '\[dependencies\]'
+    block:  |
+      ed25519-dalek = '1.0.1'
+  when: ever_node_sha2_native_enabled
+
+- name:  EVER node change binary name
+  lineinfile: 
+    path: "{{ ever_node_src_dir }}/ever_node/Cargo.toml"
+    regexp: '^name ='
+    line:  "name = 'ever_node'"
+  
+- name: Ever node add json output log support
+  lineinfile:
+    path: "{{ ever_node_src_dir }}/ever_node/Cargo.toml"
+    regexp: '^log4rs ='
+    line: "log4rs = { features = [ 'pattern_encoder', 'json_encoder' ], version = '1.2.0' }"
+
+- name: Get EVER node tools sources
+  git:
+    repo: "{{ ever_node_tools_github_repo }}"
+    dest: "{{ ever_node_src_dir }}/ever_node_tools"
+    version: "{{ ever_node_tools_github_commit_id }}"
+    force: true
+  register: ever_node_tools_sources
+
+- name: Updating EVER node tools submodules
+  shell: |
+    set -euo pipefail
+    git submodule init
+    git submodule update --recursive
+    git submodule foreach 'git submodule init'
+    git submodule foreach 'git submodule update  --recursive'
+  args:
+    executable: "/bin/bash"
+    chdir: "{{ ever_node_src_dir }}/ever_node_tools"
+
+- name: Get tonos-cli sources
+  git:
+    repo: "{{ tonos_cli_github_repo }}"
+    dest: "{{ ever_node_src_dir }}/tonos_cli"
+    version: "{{ tonos_cli_github_commit_id }}"
+    force: true
+  register: tonos_cli_sources
+
+- name: Updating tonos-cli submodules
+  shell: |
+    set -euo pipefail
+    git submodule init
+    git submodule update --recursive
+    git submodule foreach 'git submodule init'
+    git submodule foreach 'git submodule update  --recursive'
+  args:
+    executable: "/bin/bash"
+    chdir: "{{ ever_node_src_dir }}/tonos_cli"
+
+- name: Get tvm linker sources
+  git:
+    repo: "{{ tvm_linker_github_repo }}"
+    dest: "{{ ever_node_src_dir }}/tvm_linker"
+    version: "{{ tvm_linker_github_commit_id }}"
+    force: true
+  register: tvm_linker_sources
+
+- name: Updating tvm linker submodules
+  shell: |
+    set -euo pipefail
+    git submodule init
+    git submodule update --recursive
+    git submodule foreach 'git submodule init'
+    git submodule foreach 'git submodule update  --recursive'
+  args:
+    executable: "/bin/bash"
+    chdir: "{{ ever_node_src_dir }}/tvm_linker"
+
+- name: Clear debug directory
+  file:
+    path: "{{ ever_node_src_dir }}/debug"
+    state: absent
+
+- name: Build EVER node
+  block:
+    - name: Update repo deps for EVER node
+      command: '{{ ansible_env.HOME }}/.cargo/bin/cargo update --manifest-path {{ ever_node_src_dir }}/ever_node/Cargo.toml'
+    - name: Build repo |EVER node
+      command: '{{ ansible_env.HOME }}/.cargo/bin/cargo build --manifest-path {{ ever_node_src_dir }}/ever_node/Cargo.toml --target-dir {{ ever_node_src_dir }} --release {% if ever_node_metrics_enabled == true %} --features metrics{% endif %}{% if ever_node_compression_enabled == true %} --features compression{% endif %}{% if ever_node_external_db_enabled == true %} --features external_db{% endif %}{% if ever_node_sha2_native_enabled == true %} --features sha2-native{% endif %}'
+  when: ever_node_sources.changed or ever_node_force_recompile
+  environment:
+    RUSTFLAGS: "{{ rust_flags }}"
+    RUST_VERSION: "{{ rust_version.stdout }}"
+    GC_TON_NODE: "{{ ever_node_sources.after }}"
+    ZSTD_LIB_DIR: "{% if ansible_pkg_mgr == 'dnf' %}/usr/local/lib{% elif ansible_pkg_mgr == 'apt' %}/usr/lib/x86_64-linux-gnu{% endif %}"
+    PKG_CONFIG_PATH: "/usr/local/lib/pkgconfig"
+
+- name: Build EVER node tools
+  block:
+    - name: Update repo deps | node tools
+      command: '{{ ansible_env.HOME }}/.cargo/bin/cargo update --manifest-path {{ ever_node_src_dir }}/ever_node_tools/Cargo.toml'
+    - name: Build repo | node tools
+      command: '{{ ansible_env.HOME }}/.cargo/bin/cargo build --manifest-path {{ ever_node_src_dir }}/ever_node_tools/Cargo.toml --target-dir {{ ever_node_src_dir }} --release'
+  when: ever_node_tools_sources.changed or ever_node_tools_force_recompile
+  environment:
+    RUSTFLAGS: "{{ rust_flags }}"
+    ZSTD_LIB_DIR: "{% if ansible_pkg_mgr == 'dnf' %}/usr/local/lib{% elif ansible_pkg_mgr == 'apt' %}/usr/lib/x86_64-linux-gnu{% endif %}"
+    PKG_CONFIG_PATH: "/usr/local/lib/pkgconfig"
+
+- name: Build tonos-cli
+  block:
+    - name: Update repo deps | tonos-cli
+      command: '{{ ansible_env.HOME }}/.cargo/bin/cargo update --manifest-path {{ ever_node_src_dir }}/tonos_cli/Cargo.toml'
+    - name: Build repo | tonos cli
+      command: '{{ ansible_env.HOME }}/.cargo/bin/cargo build --manifest-path {{ ever_node_src_dir }}/tonos_cli/Cargo.toml --target-dir {{ ever_node_src_dir }} --release'
+  when: tonos_cli_sources.changed or tonos_cli_force_recompile
+  environment:
+    RUSTFLAGS: "{{ rust_flags }}"
+    ZSTD_LIB_DIR: "{% if ansible_pkg_mgr == 'dnf' %}/usr/local/lib{% elif ansible_pkg_mgr == 'apt' %}/usr/lib/x86_64-linux-gnu{% endif %}"
+    PKG_CONFIG_PATH: "/usr/local/lib/pkgconfig"
+
+- name: Build tvm linker
+  block:
+    - name: Update repo deps | tvm linker
+      # command: '{{ ansible_env.HOME }}/.cargo/bin/cargo update --manifest-path {{ ever_node_src_dir }}/tvm_linker/tvm_linker/Cargo.toml'
+      command: '{{ ansible_env.HOME }}/.cargo/bin/cargo update --manifest-path {{ ever_node_src_dir }}/tvm_linker/Cargo.toml'
+    - name: Build repo | tvm linker
+      # command: '{{ ansible_env.HOME }}/.cargo/bin/cargo build --manifest-path {{ ever_node_src_dir }}/tvm_linker/tvm_linker/Cargo.toml --target-dir {{ ever_node_src_dir }} --release'
+      command: '{{ ansible_env.HOME }}/.cargo/bin/cargo build --manifest-path {{ ever_node_src_dir }}/tvm_linker/Cargo.toml --target-dir {{ ever_node_src_dir }} --release'
+  when: tvm_linker_sources.changed or tvm_linker_force_recompile
+  environment:
+    RUSTFLAGS: "{{ rust_flags }}"
+    ZSTD_LIB_DIR: "{% if ansible_pkg_mgr == 'dnf' %}/usr/local/lib{% elif ansible_pkg_mgr == 'apt' %}/usr/lib/x86_64-linux-gnu{% endif %}"
+    PKG_CONFIG_PATH: "/usr/local/lib/pkgconfig"

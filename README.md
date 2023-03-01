@@ -47,7 +47,7 @@ Validator on _RFLD-net_ needs about 32 GB RAM at least, 250 GB HDD and about 8 c
 1. Install `git` and  `ansible`
 2. `git clone https://github.com/itgoldio/everscale-validator.git && cd everscale-validator`
 3. Edit inventory file: `vim inventory`
-4. Deploy `ansible-playbook deploy_ton_node.yml -c local -t basic`
+4. Deploy `ansible-playbook deploy_ever_node.yml -c local -t basic`
 5. Keys
 * If you already have keys, put it to `/home/<username>/ton-keys`
 
@@ -107,7 +107,7 @@ Ansible installation guide for CentOS: [read](https://docs.ansible.com/ansible/l
 
 * Edit the inventory file `inventory`
 
-  Specify the IP addresses in `freeton_node` and `monitoring_server` section and connection settings (`ansible_user`, `ansible_ssh_pass` ...) for your environment. 
+  Specify the IP addresses in `ever_node` and `monitoring_server` section and connection settings (`ansible_user`, `ansible_ssh_pass` ...) for your environment. 
   
   If you run the playbook **locally**, don't change the default settings.
 
@@ -143,32 +143,32 @@ Edit the variable files vars/[ton_node.yml](./vars/ton_node.yml), vars/[system.y
 
 
 * If you run playbook locally, use -c local parameter
-  `ansible-playbook deploy_ton_node.yml -c local`
+  `ansible-playbook deploy_ever_node.yml -c local`
 
 
 * To skip monitoring server installation role, specify '-t basic'
-  `ansible-playbook deploy_ton_node.yml -c local -t basic`
+  `ansible-playbook deploy_ever_node.yml -c local -t basic`
 
 
 ---
 ## Variables
 
-See the vars/[ton_node.yml](./vars/ton_node.yml), vars/[system.yml](./vars/system.yml) and vars/[monitoring.yml](./vars/monitoring.yml) files for more details
+See the vars/[ever_node.yml](./vars/ever_node.yml), vars/[system.yml](./vars/system.yml) and vars/[monitoring.yml](./vars/monitoring.yml) files for more details
 
-If you want use restoredb parameter in config, just uncomment `restoreDB: true` in vars/[ton_node.yml](./vars/ton_node.yml)
+If you want use restoredb parameter in config, just uncomment `restoreDB: true` in vars/[ever_node.yml](./vars/ever_node.yml)
 
 ---
 ## Usage
-By default, after deploying the everscale node it gets started automatically (change this behavior in vars/[ton_node.yml](./vars/ton_node.yml)).
+By default, after deploying the everscale node it gets started automatically (change this behavior in vars/[ever_node.yml](./vars/ever_node.yml)).
 You can control the running status of the everscale node using systemd commands:
-`systemctl status ton-rnode`\
-`systemctl stop ton-rnode` \
-`systemctl start ton-rnode`
+`systemctl status ever-rnode`\
+`systemctl stop ever-rnode` \
+`systemctl start ever-rnode`
 
-Everscale node stores logs in `/var/ton-work/rnode/logs` directory (change this by specifying **`ton_node_log_dir`** var in vars/[ton_node.yml](./vars/ton_node.yml)).
-You can change log rules in file roles/ton_node_deploy/ton_node_deploy/[log_cfg.yml.j2](./roles/ton_node_deploy/templates/log_cfg.yml.j2)
+Everscale node stores logs in `/var/ton-work/rnode/logs` directory (change this by specifying **`ton_node_log_dir`** var in vars/[ever_node.yml](./vars/ton_node.yml)).
+You can change log rules in file roles/ton_node_deploy/ton_node_deploy/[log_cfg.yml.j2](./roles/ever_node_deploy/templates/log_cfg.yml.j2)
 
-Binary files located in `/usr/local/bin`, all other locations stored in vars/[ton_node.yml](./vars/ton_node.yml)
+Binary files located in `/usr/local/bin`, all other locations stored in vars/[ever_node.yml](./vars/ever_node.yml)
 
 
 Monitoring services will start at the host specified in monitoring_server inventory section.
@@ -181,29 +181,29 @@ Also you can access Chronograf - InfluxDB data observation tool - via a web-brow
 ## Upgrading node version
 
 Upgrading for local installation:\
-`ansible-playbook deploy_fton_node.yml -c local -t basic,genconfig`
+`ansible-playbook deploy_ever_node.yml -c local -t basic,genconfig`
 
 For remote:\
-`ansible-playbook deploy_fton_node.yml -t basic,genconfig`
+`ansible-playbook deploy_ever_node.yml -t basic,genconfig`
 
 ---
 ## Deploy for custom network
 When you changing global network config, for example, you running **net.ton.dev** network and want to change it to **rfld.ton.dev**
 
-You should change `ton_node_config` variable in vars/[ton_node.yml](./vars/ton_node.yml) and run playbook again with tag 'flush' in addition with tag 'basic' for local installation:\
-`ansible-playbook deploy_fton_node.yml -c local -t basic,flush`
+You should change `ever_node_config` variable in vars/[ever_node.yml](./vars/ever_node.yml) and run playbook again with tag 'flush' in addition with tag 'basic' for local installation:\
+`ansible-playbook deploy_ever_node.yml -c local -t basic,flush`
 
 For remote:\
-`ansible-playbook deploy_fton_node.yml -t basic,flush`
+`ansible-playbook deploy_ever_node.yml -t basic,flush`
 
 
 If you only want update your current network global config or change node ports, use 'genconfig' tag.
 
 For local installation:\
-`ansible-playbook deploy_fton_node.yml -c local -t genconfig`
+`ansible-playbook deploy_ever_node.yml -c local -t genconfig`
 
 For remote:\
-`ansible-playbook deploy_fton_node.yml -t genconfig`
+`ansible-playbook deploy_ever_node.yml -t genconfig`
 
 **Do not use flush tag without any other tags**
 
@@ -235,7 +235,7 @@ You can see or change credentials in vars/[monitoring.yml](./vars/monitoring.yml
 
 ---
 ## StatsD metrics
-We support builded in everscale rust node StatsD service. It is disabled by default, to turn it on change `ton_node_metrics_enabled` to True in vars/[ton_node.yml](./vars/ton_node.yml).
+We support builded in everscale rust node StatsD service. It is disabled by default, to turn it on change `ever_node_metrics_enabled` to True in vars/[ever_node.yml](./vars/ever_node.yml).
 
 When you enable it you will able to use grafana dashboard:
 
@@ -268,7 +268,7 @@ You need to put your keys and data in `/home/<username>/ton-keys`:
 - tik.addr - send ticktock request to depool wallet addr. You can put $HOSTNAME.addr data to here
 - tik.keys.json file with tik.addr private key
 
-**TIP**: you can change keys default location in vars/[ton_node.yml](./vars/ton_node.yml) 
+**TIP**: you can change keys default location in vars/[ever_node.yml](./vars/ever_node.yml) 
 
 To automate validation process with scripts you should place it in cron
 `crontab -e -u <username>`

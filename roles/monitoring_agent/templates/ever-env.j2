@@ -3,7 +3,7 @@
 # it is rustnet
 # 0 = false
 # 1 = true
-export TON_IS_RUSTNET={% if ton_node_config == "rfld" %}1{% else %}0{% endif %}
+export TON_IS_RUSTNET={% if ever_node_config == "rfld" %}1{% else %}0{% endif %}
 
 # path to this file
 export TON_ENV_FILE_PATH="{{ ton_node_scripts }}/ton-env.sh"
@@ -12,28 +12,28 @@ export hNameShort=$( hostname -s )
 export hNameLong=$( hostname -f )
 
 # path to rnode bin
-export RNODE_BIN="{{ ton_node_bin_dir }}/ton_node"
+export RNODE_BIN="{{ ever_node_bin_dir }}/ton_node"
 
 # path to TON OS command line tool
 # source code: https://github.com/tonlabs/tonos-cli
-export TON_CLI="{{ ton_node_tools_dir }}/tonos-cli"
-if [[ ! -f "{{ ton_rnode_config_dir }}/tonos-cli.conf.json" ]]
+export TON_CLI="{{ ever_node_src_dir }}/tonos-cli"
+if [[ ! -f "{{ ever_node_config_dir }}/tonos-cli.conf.json" ]]
 then
   $TON_CLI config --url https://main.ton.dev 2>/dev/null 1>&2
-  /bin/cp "tonos-cli.conf.json" "{{ ton_rnode_config_dir }}/tonos-cli.conf.json"
+  /bin/cp "tonos-cli.conf.json" "{{ ever_node_config_dir }}/tonos-cli.conf.json"
 fi
-export TON_CLI_CONFIG="{{ ton_rnode_config_dir }}/tonos-cli.conf.json"
+export TON_CLI_CONFIG="{{ ever_node_config_dir }}/tonos-cli.conf.json"
 
 # path to rust validator console
 # source code: https://github.com/tonlabs/ton-labs-node-tools
-export TON_CONSOLE="{{ ton_node_tools_dir }}/console"
-export TON_CONSOLE_CONFIG="{{ ton_rnode_config_dir }}/console.json"
+export TON_CONSOLE="{{ ever_node_src_dir }}/console"
+export TON_CONSOLE_CONFIG="{{ ever_node_config_dir }}/console.json"
 
-export TON_NODE_CONFIG="{{ ton_rnode_config_dir }}/config.json"
+export ever_node_config="{{ ever_node_config_dir }}/config.json"
 
 # directory for keys and addresses
 #=================
-export KEYS_DIR="{{ ton_node_keys }}"
+export KEYS_DIR="{{ ever_node_keys }}"
 
 # validator wallet 
 #=================
@@ -89,40 +89,40 @@ else
 fi
 
 # yacht!
-myRes=$( ls -1 {{ ton_node_keys }} | grep -iqE "^tik.addr$" )
+myRes=$( ls -1 {{ ever_node_keys }} | grep -iqE "^tik.addr$" )
 if [[ $? -eq 0 ]]
 then
-  myRes=$( ls -1 {{ ton_node_keys }} | grep -iE "^tik.addr$" )
+  myRes=$( ls -1 {{ ever_node_keys }} | grep -iE "^tik.addr$" )
   export DEPOOL_TICK_ADDR_FILE_NAME="${myRes}"
   export TIK_ADDR=$( cat $KEYS_DIR/$DEPOOL_TICK_ADDR_FILE_NAME )
 fi
 
-myRes=$( ls -1 {{ ton_node_keys }} | grep -iqE "^tik.keys.json$" )
+myRes=$( ls -1 {{ ever_node_keys }} | grep -iqE "^tik.keys.json$" )
 if [[ $? -eq 0 ]]
 then
-  myRes=$( ls -1 {{ ton_node_keys }} | grep -iE "^tik.keys.json$" )
+  myRes=$( ls -1 {{ ever_node_keys }} | grep -iE "^tik.keys.json$" )
   export DEPOOL_TICK_KEY_FILE_NAME="${myRes}"
   export TIK_PRV_KEY=$KEYS_DIR/$DEPOOL_TICK_KEY_FILE_NAME
 fi
 
 #election
 #=================
-export TON_ELECTION_FOLDER="{{ ton_node_election }}"
+export TON_ELECTION_FOLDER="{{ ever_node_election }}"
 
 
 # smart contracts
 #=================
-{% if ton_node_config == "main" and ton_custler_scripts_enabled %}
-export TON_CONTRACT_SAFEMULTISIGWALLET_ABI="{{ ton_node_contracts_dir }}/safemultisig/SafeMultisigWallet.abi.json"
-export TON_CONTRACT_ELECTOR_ABI="{{ ton_node_contracts_dir }}/Elector.abi.json"
-export TON_CONTRACT_DEPOOL_ABI="{{ ton_node_contracts_dir }}/depool/DePool.abi.json"
+{% if ever_node_config == "main" and ton_custler_scripts_enabled %}
+export TON_CONTRACT_SAFEMULTISIGWALLET_ABI="{{ ever_node_contracts_dir }}/safemultisig/SafeMultisigWallet.abi.json"
+export TON_CONTRACT_ELECTOR_ABI="{{ ever_node_contracts_dir }}/Elector.abi.json"
+export TON_CONTRACT_DEPOOL_ABI="{{ ever_node_contracts_dir }}/depool/DePool.abi.json"
 {% else %}
-export TON_CONTRACT_SAFEMULTISIGWALLET_ABI="{{ ton_node_contracts_dir }}/SafeMultisigWallet.abi.json"
-export TON_CONTRACT_ELECTOR_ABI="{{ ton_node_contracts_dir }}/Elector.abi.json"
-export TON_CONTRACT_DEPOOL_ABI="{{ ton_node_contracts_dir }}/DePool.abi.json"
+export TON_CONTRACT_SAFEMULTISIGWALLET_ABI="{{ ever_node_contracts_dir }}/SafeMultisigWallet.abi.json"
+export TON_CONTRACT_ELECTOR_ABI="{{ ever_node_contracts_dir }}/Elector.abi.json"
+export TON_CONTRACT_DEPOOL_ABI="{{ ever_node_contracts_dir }}/DePool.abi.json"
 {% endif %}
 
 
 #election
 #=================
-export TON_ELECTION_FOLDER="{{ ton_node_election }}"
+export TON_ELECTION_FOLDER="{{ ever_node_election }}"

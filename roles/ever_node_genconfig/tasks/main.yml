@@ -1,0 +1,267 @@
+---
+
+- name: "Check if {{ ever_node_config_dir }} dir is empty"
+  find:
+    paths: "{{ ever_node_config_dir }}"
+    file_type: file
+    patterns: '*'
+  register: configDirNonEmpty
+
+- name: Delete old configs
+  file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - "{{ ever_node_config_dir }}/config.json"
+    - "{{ ever_node_config_dir }}/console.json"
+    - "{{ ever_node_config_dir }}/console_config.json"
+  when: configDirNonEmpty.matched <= 3 or (force_genconfig is defined and force_genconfig == true)
+
+- name: Check EVER user (if not exist)
+  user:
+    name: "{{ ever_node_user }}"
+    comment: "Everscale node user"
+    group: "{{ ever_node_group }}"
+    shell: /bin/bash
+    state: present
+  register: ever_user_created
+
+- name: Set home directory variable (if not exist)
+  set_fact:
+    ever_node_user_home: "{{ ever_user_created.home }}"
+
+- name: Create db dir
+  file:
+    path: "{{ ever_node_db_dir }}"
+    state: directory
+    owner: "{{ ever_node_user }}"
+    group: "{{ ever_node_group }}"
+    mode: u=rwx,g=rx,o=
+
+- name: Get everscale global config 
+  get_url:
+    url: "{{ ever_node_global_config_URL_list[ever_node_config].config_URL }}"
+    dest: "{{ ever_node_config_dir }}"
+    owner: "{{ ever_node_user }}"
+    group: "{{ ever_node_group }}"
+    mode: u=rw,g=r,o=
+  when: configDirNonEmpty.matched <= 3 or (force_genconfig is defined and force_genconfig == true)
+  notify: ever_systemd
+
+- name: Config tonos-cli
+  command: "{{ item }}"
+  args:
+    chdir: "{{ ever_node_src_dir }}"
+  loop:
+    - "./tonos-cli config endpoint reset"
+    - "./tonos-cli config endpoint add {{ ever_node_global_config_URL_list[ever_node_config].DAPP_address }} {{ ever_node_global_config_URL_list[ever_node_config].DAPP_endpoints }}"
+    - "./tonos-cli config --url {{ ever_node_global_config_URL_list[ever_node_config].DAPP_address }}"
+  when: configDirNonEmpty.matched <= 3 or (force_genconfig is defined and force_genconfig == true)
+
+- name: Copy tonos-cli.conf.json to configs dir
+  copy:
+    src: "{{ ever_node_src_dir }}/tonos-cli.conf.json"
+    dest: "{{ ever_node_config_dir }}/tonos-cli.conf.json"
+    owner: "{{ ever_node_user }}"
+    group: "{{ ever_node_group }}"
+    mode: u=rw,g=r,o=
+    remote_src: yes
+  when: configDirNonEmpty.matched <= 3 or (force_genconfig is defined and force_genconfig == true)
+
+- name: "Set lifetime to 600"
+  shell: "{{ item }}"
+  become: yes
+  become_user: "{{ ever_node_user }}"
+  loop:
+    - 'jq ".config.lifetime=600" "{{ ever_node_config_dir }}/tonos-cli.conf.json" > {{ ever_node_config_dir }}/tonos-cli.conf_tmp.json'
+    - 'cat {{ ever_node_config_dir }}/tonos-cli.conf_tmp.json > {{ ever_node_config_dir }}/tonos-cli.conf.json'
+  when: configDirNonEmpty.matched <= 3 or (force_genconfig is defined and force_genconfig == true)
+
+- name: Remove tonos-cli.conf.json in tools dir
+  file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - "{{ ever_node_config_dir }}/tonos-cli.conf_tmp.json"
+    - "{{ ever_node_src_dir }}/tonos-cli.conf.json"
+
+- name: Generate keys
+  shell: "./keygen > {{ ever_node_config_dir }}/{{ ansible_hostname }}_client_keys.json"
+  args:
+    chdir: "{{ ever_node_src_dir }}"
+    #creates: "{{ ever_node_config_dir }}/{{ ansible_hostname }}_client_keys.json"
+  become: yes
+  become_user: "{{ ever_node_user }}"
+  when: configDirNonEmpty.matched <= 3 or (force_genconfig is defined and force_genconfig == true)
+
+- name: Generate ever node key config
+  shell: "{{ ever_node_bin_dir }}/ever_node --configs {{ ever_node_config_dir }} --ckey \"$(jq -c .public {{ ever_node_config_dir }}/{{ ansible_hostname }}_client_keys.json)\" &"
+  #args:
+  #  creates: "{{ ever_node_config_dir }}/config.json"
+  # async: 30
+  # poll: 0
+  become: yes
+  become_user: "{{ ever_node_user }}"
+  register: ever_node_key_generated
+  notify: ever_systemd
+  when: configDirNonEmpty.matched <= 3 or (force_genconfig is defined and force_genconfig == true)
+
+- name: Wait for console_config.json creation
+  wait_for:
+    path: "{{ ever_node_config_dir }}/console_config.json"
+  when: ever_node_key_generated.changed
+
+- name: Kill nohup ever_node processes
+  shell: "kill -9 `jobs -l | awk '{print $2}'`"
+  become: yes
+  become_user: "{{ ever_node_user }}"
+  when: ever_node_key_generated.changed
+  ignore_errors: true
+
+- name: Configure console and node ports
+  shell: "{{ item }}"
+  become: yes
+  become_user: "{{ ever_node_user }}"
+  loop:
+    - "jq '.adnl_node.ip_address = \"0.0.0.0:{{ ever_node_adnl_port }}\"' {{ ever_node_config_dir }}/config.json > {{ ever_node_config_dir }}/config_tmp.json"
+    - "jq '.control_server.address = \"127.0.0.1:{{ ever_node_console_port }}\"' {{ ever_node_config_dir }}/config_tmp.json > {{ ever_node_config_dir }}/config.json"
+    - "jq '.server_address = \"127.0.0.1:{{ ever_node_console_port }}\"' {{ ever_node_config_dir }}/console_config.json > {{ ever_node_config_dir }}/console_config_tmp.json"
+    - 'cat {{ ever_node_config_dir }}/console_config_tmp.json > {{ ever_node_config_dir }}/console_config.json'
+  when: configDirNonEmpty.matched <= 3 or (force_genconfig is defined and force_genconfig == true)
+
+- name: Copy console_template.json
+  copy:
+    src: console_template.json
+    dest: "{{ ever_node_config_dir }}/console_template.json"
+    force: no
+    owner: "{{ ever_node_user }}"
+    group: "{{ ever_node_group }}"
+    mode: u=rw,g=r,o=
+  when: configDirNonEmpty.matched <= 3 or (force_genconfig is defined and force_genconfig == true)
+
+- name: Generate console.json config
+  shell: "{{ item }}"
+  #args:
+  #  creates: "{{ ever_node_config_dir }}/console.json"
+  become: yes
+  become_user: "{{ ever_node_user }}"
+  loop:
+    - "jq \".config = $(cat {{ ever_node_config_dir }}/console_config.json)\" {{ ever_node_config_dir }}/console_template.json > {{ ever_node_config_dir }}/console_tmp.json"
+    - "jq \".config.client_key = $(jq .private {{ ever_node_config_dir }}/{{ ansible_hostname }}_client_keys.json)\" {{ ever_node_config_dir }}/console_tmp.json > {{ ever_node_config_dir }}/console.json"
+  when: configDirNonEmpty.matched <= 3 or (force_genconfig is defined and force_genconfig == true)
+
+- name: Delete temporary files
+  file:
+    path: "{{ ever_node_config_dir }}/{{ item }}"
+    state: absent
+  loop:
+    - console_config_tmp.json
+    - console_tmp.json
+    - config_tmp.json
+    - console_template.json
+
+- name: Set correct keys mode
+  file:
+    path: "{{ item }}"
+    state: file
+    owner: "{{ ever_node_user }}"
+    group: "{{ ever_node_group }}"
+    mode: u=rw,g=r,o=
+  loop:
+    - "{{ ever_node_config_dir }}/{{ ansible_hostname }}_client_keys.json"
+    - "{{ ever_node_config_dir }}/config.json"
+    - "{{ ever_node_config_dir }}/console.json"
+  when: configDirNonEmpty.matched <= 3 or (force_genconfig is defined and force_genconfig == true)
+
+- name: Firewall block
+  block:
+    - name: Checking firewalld status
+      command: systemctl status firewalld
+      ignore_errors: yes
+      register: firewalld_node_state
+
+    - name: Open everscale node ports with firewalld
+      firewalld:
+        immediate: yes
+        permanent: yes
+        port: "{{ item }}"
+        state: enabled
+        zone: public
+      loop:
+        - "{{ ever_node_adnl_port }}/udp"
+        - "{{ ever_node_console_port }}/tcp"
+      when: "'active (running)' in firewalld_node_state.stdout"
+  when: ansible_pkg_mgr == "dnf"
+
+- name: Copy Custler scripts
+  copy:
+    remote_src: true
+    src: "{{ ever_node_src_dir }}/custler.uninode/scripts/"
+    dest: "{{ ton_node_scripts }}/"
+    mode: preserve 
+    owner: "{{ ever_node_user }}"
+    group: "{{ ever_node_group }}"
+  when: ton_custler_scripts_enabled
+
+- name: Set executable for Custler scripts
+  file:
+    path: "{{ ton_node_scripts }}/"
+    mode: "u+rwx,g+rx,o-rwx"
+  when: ton_custler_scripts_enabled
+
+- name: is env.sh generated by ITGold ansible script or not
+  shell: cat "{{ ton_node_scripts }}/env.sh"
+  register: is_generated_by_itgold
+  when: ton_custler_scripts_enabled
+
+- name: Making Custler scripts env file
+  template:
+    src: "env.sh.j2"
+    dest: "{{ ton_node_scripts }}/env.sh"
+    owner: "{{ ever_node_user }}"
+    group: "{{ ever_node_group }}"
+    mode: u=rwx,g=rx,o=
+  when: ton_custler_scripts_enabled and not is_generated_by_itgold.stdout.find('# ThisFileGeneratedByITGOLDAnsibleScript') != -1
+
+- name: read telega-json file
+  shell: cat "{{ ton_node_scripts }}/TlgChat.json"
+  register: result
+  when: ton_custler_scripts_enabled
+
+- name: readed telega-bot file to fact
+  set_fact:
+    jsondata: "{{ result.stdout | from_json }}"
+  when: ton_custler_scripts_enabled
+
+- name: read telegram_bot_token
+  set_fact:
+    telegram_bot_token_from_file: "{{ jsondata | json_query(jmesquery) }}"
+  vars:
+    jmesquery: 'telegram_bot_token'
+  when: ton_custler_scripts_enabled
+
+- name: read telegram_chat_id
+  set_fact:
+    telegram_chat_id_from_file: "{{ jsondata | json_query(jmesquery) }}"
+  vars:
+    jmesquery: 'telegram_chat_id'
+  when: ton_custler_scripts_enabled
+
+- name: check bot id
+  debug:
+    msg: "bot id already set: {{ telegram_bot_token_from_file }}"
+  when: ton_custler_scripts_enabled and telegram_bot_token_from_file|length > 0
+
+- name: check chat id
+  debug:
+    msg: "chat id already set: {{ telegram_chat_id_from_file }}"
+  when: ton_custler_scripts_enabled and telegram_bot_token_from_file|length > 0
+
+- name: Making Custler telegabot
+  template:
+    src: "TlgChat.json.j2"
+    dest: "{{ ton_node_scripts }}/TlgChat.json"
+    owner: "{{ ever_node_user }}"
+    group: "{{ ever_node_group }}"
+    mode: u=rwx,g=rx,o=
+  when: ton_custler_scripts_enabled and ( telegram_chat_id_from_file|length < 2 and telegram_bot_token_from_file|length < 2  )

@@ -1,0 +1,172 @@
+---
+
+- name: Copy ever node tools binaries
+  copy:
+    src: "{{ ever_node_src_dir }}/release/{{ item }}"
+    dest: "{{ ever_node_tools_dir }}/{{ item }}"
+    owner: "{{ ever_node_user }}"
+    group: "{{ ever_node_group }}"
+    mode: u=rwx,g=rx,o=
+    remote_src: yes
+  loop:
+    - console
+    - dhtscan
+    - gendht
+    - keygen
+    - print
+    - zerostate
+  when: ever_node_tools_sources.changed or ever_node_tools_force_recompile
+
+- name: Copy tonos-cli binaries
+  copy:
+    src: "{{ ever_node_src_dir }}/release/tonos-cli"
+    dest: "{{ ever_node_tools_dir }}"
+    owner: "{{ ever_node_user }}"
+    group: "{{ ever_node_group }}"
+    mode: u=rwx,g=rx,o=
+    remote_src: yes
+  when: tonos_cli_sources.changed or tonos_cli_force_recompile
+
+- name: Copy tvm linker binaries
+  copy:
+    src: "{{ ever_node_src_dir }}/release/tvm_linker"
+    dest: "{{ ever_node_tools_dir }}"
+    owner: "{{ ever_node_user }}"
+    group: "{{ ever_node_group }}"
+    mode: u=rwx,g=rx,o=
+    remote_src: yes
+  when: tvm_linker_sources.changed or tvm_linker_force_recompile
+
+- name: Copy ever node binaries
+  copy:
+    src: "{{ ever_node_src_dir }}/release/ever_node"
+    dest: "{{ ever_node_bin_dir }}"
+    owner: "{{ ever_node_user }}"
+    group: "{{ ever_node_group }}"
+    mode: u=rwx,g=rx,o=
+    remote_src: yes
+  when: ever_node_sources.changed or ever_node_force_recompile
+  notify: ever_systemd
+
+- name: Copy default ever node config
+  copy:
+    src: "{{ ever_node_src_dir }}/ever_node/configs/default_config.json"
+    dest: "{{ ever_node_config_dir }}"
+    owner: "{{ ever_node_user }}"
+    group: "{{ ever_node_group }}"
+    mode: u=rw,g=r,o=
+    remote_src: yes
+  notify: ever_systemd
+
+- name: Copy logging config
+  template:
+    src: "log_cfg.yml.j2"
+    dest: "{{ ever_node_config_dir }}/log_cfg.yml"
+    owner: "{{ ever_node_user }}"
+    group: "{{ ever_node_group }}"
+    mode: u=rw,g=r,o=
+
+- name: Get EVERSCALE network global config 
+  get_url:
+    url: "{{ ever_node_global_config_URL_list[ever_node_config].config_URL }}"
+    dest: "{{ ever_node_config_dir }}"
+    owner: "{{ ever_node_user }}"
+    group: "{{ ever_node_group }}"
+    mode: u=rw,g=r,o=
+  notify: ever_systemd
+
+- name: Copy evernode systemd service environment variables
+  copy:
+    src: ton.env.conf
+    dest: "/etc/systemd/system/{{ ever_node_service_name }}.service.d/"
+    mode: u=rw,g=r,o=r
+  notify: ever_systemd
+
+- name: Create ever systemd service (RUST)
+  template:
+    src: "ever-node.service.j2"
+    dest: "/etc/systemd/system/{{ ever_node_service_name }}.service"
+    mode: u=rw,g=r,o=r
+  notify: ever_systemd
+
+- name: Get smart contracts sources
+  git:
+    repo: "{{ ever_smartcontracts_github_repo }}"
+    dest: "{{ ever_node_src_dir }}/ton-labs-contracts"
+    version: "{{ ever_smartcontracts_github_commit_id }}"
+
+- name: Copy smart contracts
+  copy:
+    remote_src: true
+    src: "{{ ever_node_src_dir }}/ton-labs-contracts/solidity/"
+    dest: "{{ ever_node_contracts_dir }}/"
+    mode: u=rwx,g=rx,o=
+    owner: "{{ ever_node_user }}"
+    group: "{{ ever_node_group }}"
+
+- name: Get rfld custler sources
+  git:
+    repo: "{{ ever_custler_github_repo }}"
+    dest: "{{ ever_node_src_dir }}/custler.uninode"
+    version: "{{ ton_custler_github_commit_id }}"
+
+- name: Copy rfld smart contracts
+  copy:
+    remote_src: true
+    src: "{{ ever_node_src_dir }}/custler.uninode/configs/depool_RFLD"
+    dest: "{{ ever_node_contracts_dir }}/"
+    mode: u=rwx,g=rx,o=
+    owner: "{{ ever_node_user }}"
+    group: "{{ ever_node_group }}"
+  when: ever_node_config == "rfld"
+
+- name: Copy additional smart contracts
+  get_url:
+    url: "{{ item }}"
+    dest: "{{ ever_node_contracts_dir }}/"
+    owner: "{{ ever_node_user }}"
+    group: "{{ ever_node_group }}"
+    mode: u=rw,g=r,o=
+  loop: "{{ ever_node_additional_contracts | list | unique }}"
+
+
+- block:
+  - name: Set restore_db true to config
+    shell: "{{ item }}"
+    become: yes
+    become_user: "{{ ever_node_user }}"
+    loop:
+      - 'jq ".restore_db = true" "{{ ever_node_config_dir }}/config.json" > "{{ ever_node_config_dir }}/config.json_tmp"'
+      - 'cat {{ ever_node_config_dir }}/config.json_tmp > {{ ever_node_config_dir }}/config.json'
+
+  - name: restart node
+    systemd:
+      daemon_reload: true
+      name: "{{ ever_node_service_name  }}"
+      enabled: "{{ ever_node_service_autostart }}"
+      state: restarted
+
+  - name: Get timediff from console 
+    shell: |
+      {{ ever_node_src_dir }}/console -j -C {{ ever_node_config_dir }}/console.json -c getstats | jq ".timediff"
+    args:
+      executable: /bin/bash
+    retries: 300
+    delay: 60
+    until: time_diff_console.stdout|int < 6 and time_diff_console.stdout != 'null' and time_diff_console.stdout != ''
+    register: time_diff_console
+
+  - name: set restore_db false to config
+    shell: "{{ item }}"
+    become: yes
+    become_user: "{{ ever_node_user }}"
+    loop:
+      - 'jq ".restore_db = false" "{{ ever_node_config_dir }}/config.json" > "{{ ever_node_config_dir }}/config.json_tmp"'
+      - 'cat {{ ever_node_config_dir }}/config.json_tmp > {{ ever_node_config_dir }}/config.json'
+
+  - name: create file for Custler script
+    ansible.builtin.file:
+      path: "{{ ton_node_scripts }}/rnode_commit_5494f43_DB_Restored"
+      state: touch
+
+  when: restoreDB is defined and restoreDB == true
