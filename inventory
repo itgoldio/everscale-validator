@@ -1,8 +1,6 @@
 # Specify your hosts IP addresses
 [ever_node]
-#127.0.0.1 ansible_connection=local
-enode86.itgold.io ansible_host=46.243.187.37
-#enode90.itgold.io ansible_host=188.227.35.28
+127.0.0.1 ansible_connection=local
 
 [monitoring_server]
 127.0.0.1 ansible_connection=local
