@@ -51,7 +51,7 @@
 - name: Config tonos-cli
   command: "{{ item }}"
   args:
-    chdir: "{{ ever_node_src_dir }}"
+    chdir: "{{ ever_node_tools_dir }}"
   loop:
     - "./tonos-cli config endpoint reset"
     - "./tonos-cli config endpoint add {{ ever_node_global_config_URL_list[ever_node_config].DAPP_address }} {{ ever_node_global_config_URL_list[ever_node_config].DAPP_endpoints }}"
@@ -60,7 +60,7 @@
 
 - name: Copy tonos-cli.conf.json to configs dir
   copy:
-    src: "{{ ever_node_src_dir }}/tonos-cli.conf.json"
+    src: "{{ ever_node_tools_dir }}/tonos-cli.conf.json"
     dest: "{{ ever_node_config_dir }}/tonos-cli.conf.json"
     owner: "{{ ever_node_user }}"
     group: "{{ ever_node_group }}"
@@ -83,12 +83,12 @@
     state: absent
   loop:
     - "{{ ever_node_config_dir }}/tonos-cli.conf_tmp.json"
-    - "{{ ever_node_src_dir }}/tonos-cli.conf.json"
+    - "{{ ever_node_tools_dir }}/tonos-cli.conf.json"
 
 - name: Generate keys
   shell: "./keygen > {{ ever_node_config_dir }}/{{ ansible_hostname }}_client_keys.json"
   args:
-    chdir: "{{ ever_node_src_dir }}"
+    chdir: "{{ ever_node_tools_dir }}"
     #creates: "{{ ever_node_config_dir }}/{{ ansible_hostname }}_client_keys.json"
   become: yes
   become_user: "{{ ever_node_user }}"

@@ -45,7 +45,7 @@ ever_node_tools_github_repo: "https://github.com/tonlabs/ever-node-tools.git"
 ever_node_tools_github_commit_id: "master"
 
 # Recompile binary without sources changes: false|true
-ever_node_tools_force_recompile: true
+ever_node_tools_force_recompile: false
 
 # Get tonos cli commit id: https://github.com/tonlabs/tonos-cli/commits"
 tonos_cli_github_repo: "https://github.com/tonlabs/tonos-cli.git"
@@ -59,7 +59,7 @@ tvm_linker_github_repo: "https://github.com/tonlabs/TVM-linker.git"
 tvm_linker_github_commit_id: "master"
 
 # Recompile binary without sources changes: false|true
-tvm_linker_force_recompile: true
+tvm_linker_force_recompile: false
 
 # Compile ever_node with metrics enabled - powered by statsd service it will send stats to influxdb (grafana): false|true
 ever_node_metrics_enabled: false
