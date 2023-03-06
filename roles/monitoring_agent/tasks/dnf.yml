@@ -5,10 +5,10 @@
     file: influxdb
     baseurl: https://repos.influxdata.com/rhel/$releasever/$basearch/stable
     gpgcheck: yes
-    gpgkey: https://repos.influxdata.com/influxdb.key
+    gpgkey: https://repos.influxdata.com/influxdata-archive.key
     enabled: yes
 
-- name: Install telegraf and it's dependencies
+- name: Install telegraf and it dependencies
   dnf:
     name:
       - telegraf
