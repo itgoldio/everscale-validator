@@ -164,7 +164,7 @@
       - 'jq ".restore_db = false" "{{ ever_node_config_dir }}/config.json" > "{{ ever_node_config_dir }}/config.json_tmp"'
       - 'cat {{ ever_node_config_dir }}/config.json_tmp > {{ ever_node_config_dir }}/config.json'
 
-  - name: create file for Custler script
+  - name: Create file for Custler script
     ansible.builtin.file:
       path: "{{ ton_node_scripts }}/rnode_commit_5494f43_DB_Restored"
       state: touch

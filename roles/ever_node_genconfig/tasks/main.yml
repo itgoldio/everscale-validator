@@ -129,6 +129,19 @@
     - 'cat {{ ever_node_config_dir }}/console_config_tmp.json > {{ ever_node_config_dir }}/console_config.json'
   when: configDirNonEmpty.matched <= 3 or (force_genconfig is defined and force_genconfig == true)
 
+- name: Configure ever node garbage collector settings (from node version 0.51.34+)
+  shell: "{{ item }}"
+  become: yes
+  become_user: "{{ ever_node_user }}"
+  loop:
+    - "jq '.gc.archives_life_time_hours = null' {{ ever_node_config_dir }}/config.json > {{ ever_node_config_dir }}/config_tmp.json"
+    - "jq '.gc.enable_for_archives = true' {{ ever_node_config_dir }}/config_tmp.json > {{ ever_node_config_dir }}/config.json"
+    - "jq '.gc.enable_for_shard_state_persistent = true' {{ ever_node_config_dir }}/config.json > {{ ever_node_config_dir }}/config_tmp.json"
+    - "jq '.gc.cells_gc_config.gc_interval_sec = 900' {{ ever_node_config_dir }}/config_tmp.json > {{ ever_node_config_dir }}/config.json"
+    - "jq '.gc.cells_gc_config.cells_lifetime_sec = 1800' {{ ever_node_config_dir }}/config.json > {{ ever_node_config_dir }}/config_tmp.json"
+    - 'cat {{ ever_node_config_dir }}/config_tmp.json > {{ ever_node_config_dir }}/config.json'
+  when: configDirNonEmpty.matched <= 3 or (force_genconfig is defined and force_genconfig == true)
+
 - name: Copy console_template.json
   copy:
     src: console_template.json

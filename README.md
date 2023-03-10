@@ -122,7 +122,7 @@ First server with enabled remote login for `root` and second host with non-root 
 Edit inventory file:
 `vim inventory`
 
-`[ton_node]`\
+`[ever_node]`\
 `11.22.33.44 ansible_user='root' ansible_ssh_pass='secretpassword'`\
 `22.33.44.55 ansible_user='someuser' ansible_ssh_pass='supersecretpassword' ansible_become=true`\
 `[monitoring_server]`\
@@ -130,16 +130,16 @@ Edit inventory file:
 
 **There is no need to specify more than one monitoring server. All agents will connect only to the first one**
 
-Edit the variable files vars/[ton_node.yml](./vars/ton_node.yml), vars/[system.yml](./vars/system.yml) and vars/[monitoring.yml](./vars/monitoring.yml)
+Edit the variable files vars/[ever_node.yml](./vars/ever_node.yml), vars/[system.yml](./vars/system.yml) and vars/[monitoring.yml](./vars/monitoring.yml)
 
-`vim vars/ton_node.yml`\
+`vim vars/ever_node.yml`\
 `vim vars/system.yml`\
 `vim vars/monitoring.yml`
 
 **Be careful and don't forget to change standard passwords in [monitoring.yml](./vars/monitoring.yml) file**
 
 * Run playbook:
-  `ansible-playbook deploy_ton_node.yml`
+  `ansible-playbook deploy_ever_node.yml`
 
 
 * If you run playbook locally, use -c local parameter
@@ -165,8 +165,8 @@ You can control the running status of the everscale node using systemd commands:
 `systemctl stop ever-rnode` \
 `systemctl start ever-rnode`
 
-Everscale node stores logs in `/var/ton-work/rnode/logs` directory (change this by specifying **`ton_node_log_dir`** var in vars/[ever_node.yml](./vars/ton_node.yml)).
-You can change log rules in file roles/ton_node_deploy/ton_node_deploy/[log_cfg.yml.j2](./roles/ever_node_deploy/templates/log_cfg.yml.j2)
+Everscale node stores logs in `/var/ton-work/rnode/logs` directory (change this by specifying **`ton_node_log_dir`** var in vars/[ever_node.yml](./vars/ever_node.yml)).
+You can change log rules in file roles/ever_node_deploy/templates/[log_cfg.yml.j2](./roles/ever_node_deploy/templates/log_cfg.yml.j2)
 
 Binary files located in `/usr/local/bin`, all other locations stored in vars/[ever_node.yml](./vars/ever_node.yml)
 
