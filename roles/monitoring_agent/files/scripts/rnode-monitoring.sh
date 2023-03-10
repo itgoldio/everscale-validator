@@ -47,6 +47,7 @@ usage() {
 -w   -- warning
 -c   -- critical
 -C   -- tonos-cli config file
+-e   -- env-file
 -t   -- type
       
     These checks calls without -w and -c params:
