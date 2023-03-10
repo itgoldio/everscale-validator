@@ -6,17 +6,17 @@
 export TON_IS_RUSTNET={% if ever_node_config == "rfld" %}1{% else %}0{% endif %}
 
 # path to this file
-export TON_ENV_FILE_PATH="{{ ton_node_scripts }}/ton-env.sh"
+export TON_ENV_FILE_PATH="{{ ton_node_scripts }}/ever-env.sh"
 
 export hNameShort=$( hostname -s )
 export hNameLong=$( hostname -f )
 
 # path to rnode bin
-export RNODE_BIN="{{ ever_node_bin_dir }}/ton_node"
+export RNODE_BIN="{{ ever_node_bin_dir }}/ever_node"
 
 # path to TON OS command line tool
 # source code: https://github.com/tonlabs/tonos-cli
-export TON_CLI="{{ ever_node_src_dir }}/tonos-cli"
+export TON_CLI="{{ ever_node_tools_dir }}/tonos-cli"
 if [[ ! -f "{{ ever_node_config_dir }}/tonos-cli.conf.json" ]]
 then
   $TON_CLI config --url https://main.ton.dev 2>/dev/null 1>&2
@@ -26,7 +26,7 @@ export TON_CLI_CONFIG="{{ ever_node_config_dir }}/tonos-cli.conf.json"
 
 # path to rust validator console
 # source code: https://github.com/tonlabs/ton-labs-node-tools
-export TON_CONSOLE="{{ ever_node_src_dir }}/console"
+export TON_CONSOLE="{{ ever_node_tools_dir }}/console"
 export TON_CONSOLE_CONFIG="{{ ever_node_config_dir }}/console.json"
 
 export ever_node_config="{{ ever_node_config_dir }}/config.json"

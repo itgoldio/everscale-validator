@@ -52,7 +52,7 @@ tonos_cli_github_repo: "https://github.com/tonlabs/tonos-cli.git"
 tonos_cli_github_commit_id: "master"
 
 # Recompile binary without sources changes: false|true
-tonos_cli_force_recompile: true
+tonos_cli_force_recompile: false
 
 # Get TVM linker commit id: https://github.com/tonlabs/TVM-linker/commits"
 tvm_linker_github_repo: "https://github.com/tonlabs/TVM-linker.git"
@@ -118,7 +118,7 @@ ever_node_console_port: "4925"
 # ever_custler_github_repo: "https://github.com/Everscale-Network/custler.uninode.git"
 ever_custler_github_repo: "https://github.com/Custler/main.evs.dev.git"
 ton_custler_github_commit_id: "main"
-ton_custler_scripts_enabled: false
+ton_custler_scripts_enabled: true
 
 # Freeton smart contracts
 ever_smartcontracts_github_repo: "https://github.com/tonlabs/ton-labs-contracts.git"

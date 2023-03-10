@@ -14,7 +14,7 @@ appenders:
       kind: compound
       trigger:
         kind: size
-        limit: 100 mb
+        limit: 1 gb
       roller:
         kind: fixed_window
         pattern: {{ ever_node_log_dir }}/node.{}.log
@@ -27,7 +27,7 @@ root:
 # debug include debug, info and warn levels,
 # info  include info and warn
 # warn  just warn level
-  level: off
+  level: info
   appenders:
     - rolling
 
@@ -78,13 +78,13 @@ loggers:
     level: off
 
   validator:
-    level: off
+    level: info
 
   catchain:
     level: off
 
   validator_session:
-    level: off
+    level: info
 
   telemetry:
     level: error

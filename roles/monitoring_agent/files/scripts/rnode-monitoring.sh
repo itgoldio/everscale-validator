@@ -15,7 +15,8 @@ STATE_UNKNOWN=3         # define the exit code if status is Unknown
 getScriptDir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)
 cd $getScriptDir
 
-source ton-env.sh
+[[ -f ton-env.sh ]] && source ton-env.sh
+[[ -f ever-env.sh ]] && source ever-env.sh
 
 Depool_addr=$DEPOOL_ADDR
 Validator_addr=$VALIDATOR_WALLET_ADDR
@@ -37,7 +38,7 @@ headBin=$( which head )
 divideValue=1000000000
 awkBin=$( which awk )
 
-version="0.7.4"
+version="0.8.0"
 
 # show usage/help info and exit
 usage() {
@@ -46,6 +47,7 @@ usage() {
 -w   -- warning
 -c   -- critical
 -C   -- tonos-cli config file
+-e   -- env-file
 -t   -- type
       
     These checks calls without -w and -c params:
@@ -530,19 +532,29 @@ then
   usage
 fi
 
-while getopts ":w:c:t:hC:" myArgs
+while getopts ":w:c:t:hC:e:" myArgs
 do
   case ${myArgs} in
     w) warnValue=${OPTARG} ;;
     c) critValue=${OPTARG} ;;
     t) typeCheck=${OPTARG} ;;
     C) configFile=${OPTARG} ;;
+    e) envFile=${OPTARGS} ;;
     h) usage ;;
     \?)  echo "Wrong option given. Check help ( $0 -h ) for usage."
         exit $STATE_UNKNOWN
         ;;
   esac
 done
+
+
+if [[ -n ${envFile} ]]; then
+  if [[ ! -f ${envFile} ]]; then
+    echo "Passed env file ${envFile} not exist"
+    exit $STATE_UNKNOWN
+  fi
+  source ${envFile}
+fi
 
 if [[ "${typeCheck}" == "isValidatingNow" ]]
 then
