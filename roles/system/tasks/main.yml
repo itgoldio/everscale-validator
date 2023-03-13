@@ -99,3 +99,61 @@
   loop: "{{ sysctl_conf.ever_node | list | unique }}"
   ignore_errors: true
   when: sysctl_set|bool and sysctl_conf | length > 0
+
+
+- name: icinga to sudoers
+  block:
+    - name: Set SELinux in permissive mode until the machine is rebooted
+      command: setenforce 0
+      ignore_errors: true
+      changed_when: false
+
+    - name: check sudoers file for icinga user
+      stat:
+        path: /etc/sudoers.d/icinga
+      register: stat_result
+
+    - name: create sudoers file for icinga if file not exist
+      file:
+        path: /etc/sudoers.d/icinga
+        state: touch
+      when: not stat_result.stat.exists
+
+    - name: add icinga to sudoers
+      lineinfile:
+        path: /etc/sudoers.d/icinga
+        state: present
+        line: 'icinga ALL=(ALL) NOPASSWD: ALL'
+        validate: 'visudo -cf %s'
+  when: add_icinga_to_sudoers and use_icinga
+
+- name: when icinga not in sudoers
+  block:
+    - name: add icinga to {{ ever_node_group  }}
+      user: name={{ icinga }}
+            group={{ ever_node_group }}
+            append=yes
+
+    - name: execute bit for group to validator directory
+      ansible.builtin.file:
+        path: "{{ ever_node_user_home }}"
+        owner: "{{ ever_node_user }}"
+        group: "{{ ever_node_group }}"
+        mode: '0750'
+
+    - name: execute bit for group to keys directory
+      ansible.builtin.file:
+        path: "{{ ever_node_keys }}/*"
+        owner: "{{ ever_node_user }}"
+        group: "{{ ever_node_group }}"
+        mode: g+r
+  when: not add_icinga_to_sudoers and use_icinga
+
+- name: back compat
+  ansible.builtin.file:
+    src: "{{ ever_node_user_home }}/ton-env.sh"
+    dest: "{{ ever_node_user_home }}/ever-env.sh"
+    owner: "{{ ever_node_user }}"
+    group: "{{ ever_node_group }}"
+    state: link
+  when: use_icinga

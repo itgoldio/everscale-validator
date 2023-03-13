@@ -58,5 +58,8 @@ rustup_default_toolchain: "1.67.1"
 # Rust flags compile environment
 rust_flags: "-C target-cpu=native"
 
+# when using icinga
+use_icinga: false
+
 # insecure option!
 add_icinga_to_sudoers: false
