@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# ilya.vasilev@itglobal.com, 2021, 2022
+# ilya.vasilev@itglobal.com, 2021, 2022, 2023
 # https://itgold.io
 # https://github.com/itgoldio
 

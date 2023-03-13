@@ -55,4 +55,3 @@
   command: setenforce 0
   ignore_errors: true
   changed_when: false
-
