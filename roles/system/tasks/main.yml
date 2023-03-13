@@ -131,8 +131,8 @@
   block:
     - name: add icinga to {{ ever_node_group  }}
       user: 
-        name: {{ icinga }}
-        group: {{ ever_node_group }}
+        name: "icinga"
+        group: "{{ ever_node_group }}"
         append: yes
 
     - name: execute bit for group to validator directory
