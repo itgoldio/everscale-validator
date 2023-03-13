@@ -35,24 +35,3 @@
         dest: /etc/ntp.conf
       notify: "restart ntp"
   when: ntp_enabled is defined and ntp_enabled|bool
-
-- name: icinga to sudoers
-  block: 
-  - name: check sudoers file for icinga user
-    stat:
-      path: /etc/sudoers.d/icinga
-    register: stat_result
-
-  - name: create sudoers file for icinga if file not exist
-    file:
-      path: /etc/sudoers.d/icinga
-      state: touch
-    when: not stat_result.stat.exists
-
-  - name: add icinga to sudoers
-    lineinfile:
-      path: /etc/sudoers.d/icinga
-      state: present
-      line: 'nagios ALL=(ALL) NOPASSWD: ALL'
-      validate: 'visudo -cf %s'
-  when: add_icinga_to_sudoers
