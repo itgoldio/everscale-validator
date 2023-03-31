@@ -93,9 +93,10 @@ getRNodeVersion() {
 }
 
 getDePoolBalance() {
-  versionAsNumber=$( echo "$( getTonosCliVersion)" | sed 's/\.//g' )
+  versionAsNumber=$( echo "$( getTonosCliVersion )" | sed 's/\.//g' )
   oldVersion="0246"
-  if [[ $((10#$versionAsNumber)) -le $((10#$oldVersion)) ]]
+  freshVersion="0352"
+  if [[ $((10#$versionAsNumber)) -le $((10#$oldVersion)) || $((10#$versionAsNumber)) -ge $((10#$freshVersion)) ]]
   then
     myRes=$( $TON_CLI -j -c $TON_CLI_CONFIG account $DEPOOL_ADDR | jq -r ".balance" )
   else
