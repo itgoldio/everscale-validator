@@ -1,5 +1,5 @@
 # Set everscale work network
-# Possible values are: main, net, fld, rfld. Also you must change ever_node_compression_enabled value.
+# Possible values are: main, net, fld.
 ever_node_config: "main"
 
 # Possible values are: -1, 0 and 1. For rust node use 0.
@@ -28,31 +28,26 @@ ever_node_global_config_URL_list:
     DAPP_address: "https://gql.custler.net"
     DAPP_endpoints: "https://gql.custler.net"
 
-rfld:
-    config_URL: "https://raw.githubusercontent.com/FreeTON-Network/custler.uninode/main/configs/rfld.ton.dev/ton-global.config.json"
-    DAPP_address: "https://rfld.ton.dev"
-    DAPP_endpoints: "https://rfld-dapp.itgold.io"
-
 # Get everscale node commit id: https://github.com/tonlabs/ever-node/commits
 ever_node_github_repo: "https://github.com/tonlabs/ever-node.git"
 ever_node_github_commit_id: "master"
 
 # Recompile binary without sources changes: false|true
-ever_node_force_recompile: false
+ever_node_force_recompile: true
 
 # Get everscale node tools commit id: https://github.com/tonlabs/ever-node-tools/commits"
 ever_node_tools_github_repo: "https://github.com/tonlabs/ever-node-tools.git"
 ever_node_tools_github_commit_id: "master"
 
 # Recompile binary without sources changes: false|true
-ever_node_tools_force_recompile: false
+ever_node_tools_force_recompile: true
 
 # Get tonos cli commit id: https://github.com/tonlabs/tonos-cli/commits"
 tonos_cli_github_repo: "https://github.com/tonlabs/tonos-cli.git"
 tonos_cli_github_commit_id: "master"
 
 # Recompile binary without sources changes: false|true
-tonos_cli_force_recompile: false
+tonos_cli_force_recompile: true
 
 # Get TVM linker commit id: https://github.com/tonlabs/TVM-linker/commits"
 tvm_linker_github_repo: "https://github.com/tonlabs/TVM-linker.git"
@@ -64,14 +59,11 @@ tvm_linker_force_recompile: false
 # Compile ever_node with metrics enabled - powered by statsd service it will send stats to influxdb (grafana): false|true
 ever_node_metrics_enabled: false
 
-# Compile ever_node with compression enabled: false|true. Do not use compression at any network except 'rfld'.
-ever_node_compression_enabled: false
-
 # Compile ever_node with external_db enabled: false|true. Only for DAPP usage with Apache Kafka back-end.
 ever_node_external_db_enabled: false
 
-# Compile with sha20native feature
-ever_node_sha2_native_enabled: true
+# Experimental option
+ever_node_release_enabled: true
 
 ever_node_solc_github_repo: "https://github.com/tonlabs/TON-Solidity-Compiler.git"
 ever_node_solc_github_commit_id: "master"
@@ -118,7 +110,7 @@ ever_node_console_port: "4925"
 # ever_custler_github_repo: "https://github.com/Everscale-Network/custler.uninode.git"
 ever_custler_github_repo: "https://github.com/Custler/main.evs.dev.git"
 ton_custler_github_commit_id: "main"
-ton_custler_scripts_enabled: true
+ton_custler_scripts_enabled: false
 
 # Freeton smart contracts
 ever_smartcontracts_github_repo: "https://github.com/tonlabs/ton-labs-contracts.git"

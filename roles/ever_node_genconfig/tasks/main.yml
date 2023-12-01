@@ -86,7 +86,7 @@
     - "{{ ever_node_tools_dir }}/tonos-cli.conf.json"
 
 - name: Generate keys
-  shell: "./keygen > {{ ever_node_config_dir }}/{{ ansible_hostname }}_client_keys.json"
+  shell: "{{ ever_node_tools_dir }}/keygen > {{ ever_node_config_dir }}/{{ ansible_hostname }}_client_keys.json"
   args:
     chdir: "{{ ever_node_tools_dir }}"
     #creates: "{{ ever_node_config_dir }}/{{ ansible_hostname }}_client_keys.json"

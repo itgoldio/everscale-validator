@@ -4,7 +4,7 @@
     description: InfluxDB Repository - RHEL $releasever
     file: influxdb
     baseurl: https://repos.influxdata.com/rhel/$releasever/$basearch/stable
-    gpgcheck: yes
+    gpgcheck: no
     gpgkey: https://repos.influxdata.com/influxdata-archive.key
     enabled: yes
 
