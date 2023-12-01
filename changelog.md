@@ -1,3 +1,5 @@
+## 3.2
+  - Some playbook fixes
 ## 3.1
   - New var `use_icinga` - if you like icinga and install icinga-agent on your validator
 ## 3.0

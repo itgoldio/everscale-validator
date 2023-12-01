@@ -9,6 +9,8 @@
     mode: u=rwx,g=rx,o=
     remote_src: yes
   loop:
+    - adnl_ping
+    - adnl_resolve
     - console
     - dhtscan
     - gendht

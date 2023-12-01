@@ -89,30 +89,21 @@
     executable: "/bin/bash"
     chdir: "{{ ever_node_src_dir }}/ever_node"
 
-- name:  EVER node add features
-  blockinfile: 
-    path: "{{ ever_node_src_dir }}/ever_node/Cargo.toml"
-    marker: "### ANSIBLE BLOCKINFILE 1 ####"
-    insertafter: '\[features\]'
-    block:  |
-      sha2-native = ['sha2/asm', 'ed25519-dalek/asm']
-  when: ever_node_sha2_native_enabled
-
-- name:  EVER node add dependencies
-  blockinfile: 
-    path: "{{ ever_node_src_dir }}/ever_node/Cargo.toml"
-    marker: "### ANSIBLE BLOCKINFILE 2 ####"
-    insertafter: '\[dependencies\]'
-    block:  |
-      ed25519-dalek = '1.0.1'
-  when: ever_node_sha2_native_enabled
-
 - name:  EVER node change binary name
   lineinfile: 
     path: "{{ ever_node_src_dir }}/ever_node/Cargo.toml"
     regexp: '^name ='
     line:  "name = 'ever_node'"
-  
+
+- name:  EVER node change release options
+  blockinfile: 
+    path: "{{ ever_node_src_dir }}/ever_node/Cargo.toml"
+    marker: "### ANSIBLE BLOCKINFILE 3 ####"
+    insertafter: '\[profile\]'
+    block:  |
+      release = { lto = 'fat', codegen-units = 1, panic = 'abort' }
+  when: ever_node_release_enabled
+
 - name: Ever node add json output log support
   lineinfile:
     path: "{{ ever_node_src_dir }}/ever_node/Cargo.toml"
@@ -186,7 +177,7 @@
     - name: Update repo deps for EVER node
       command: '{{ ansible_env.HOME }}/.cargo/bin/cargo update --manifest-path {{ ever_node_src_dir }}/ever_node/Cargo.toml'
     - name: Build repo |EVER node
-      command: '{{ ansible_env.HOME }}/.cargo/bin/cargo build --manifest-path {{ ever_node_src_dir }}/ever_node/Cargo.toml --target-dir {{ ever_node_src_dir }} --release {% if ever_node_metrics_enabled == true %} --features metrics{% endif %}{% if ever_node_compression_enabled == true %} --features compression{% endif %}{% if ever_node_external_db_enabled == true %} --features external_db{% endif %}{% if ever_node_sha2_native_enabled == true %} --features sha2-native{% endif %}'
+      command: '{{ ansible_env.HOME }}/.cargo/bin/cargo build --manifest-path {{ ever_node_src_dir }}/ever_node/Cargo.toml --target-dir {{ ever_node_src_dir }} --release {% if ever_node_metrics_enabled == true %} --features metrics{% endif %}{% if ever_node_external_db_enabled == true %} --features external_db{% endif %}'
   when: ever_node_sources.changed or ever_node_force_recompile
   environment:
     RUSTFLAGS: "{{ rust_flags }}"
