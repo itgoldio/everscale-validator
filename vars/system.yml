@@ -59,7 +59,7 @@ rustup_default_toolchain: "1.70.0"
 rust_flags: "-C target-cpu=native"
 
 # when using icinga
-use_icinga: true
+use_icinga: false
 
 # insecure option!
 add_icinga_to_sudoers: false

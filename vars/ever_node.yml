@@ -78,7 +78,7 @@ ever_node_group: "xnode"
 # Set everscale node service enabled for autostart after system restart: yes|no
 ever_node_service_autostart: "yes"
 # Everscale node service state after ansible script deploying: restarted|started|stopped
-ever_node_service_state: "stopped"
+ever_node_service_state: "restarted"
 
 # Specify everscale dirs
 # Variable ever_node_user_home depends on username and it's home dir (ever_node_user).
