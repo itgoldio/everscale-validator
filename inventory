@@ -1,23 +1,6 @@
 # Specify your hosts IP addresses
 [ever_node]
-#rnode01.itgold.io
-#rnode02.itgold.io
-#rnode03.itgold.io
-#rnode04.itgold.io
-#rnode05.itgold.io
-#rnode06.itgold.io
-#rnode07.itgold.io
-#rnode08.itgold.io
-#rnode09.itgold.io
-#rnode10.itgold.io
-#rnode11.itgold.io
-#rnode12.itgold.io
-#rnode13.itgold.io
-#rnode14.itgold.io
-#rnode15.itgold.io
-#rnode16.itgold.io
 localhost
-#dapp-temp.itgold.io
 
 [monitoring_server]
 127.0.0.1 ansible_connection=local
