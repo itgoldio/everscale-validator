@@ -322,6 +322,7 @@ findInP34Config() {
 findInP36Config() {
   myRes=$( getP36Config )
   [[ $myRes == "null" ]] && echo "null" && return
+  [[ $myRes == "{}" ]] && echo "null" && return
   isInp36=$( echo "$( getP36Config )" | jq ".list[]|select(.adnl_addr == \"${1}\")" )
   if [[ -n $isInp36 ]]
   then
