@@ -89,11 +89,11 @@
     executable: "/bin/bash"
     chdir: "{{ ever_node_src_dir }}/ever_node"
 
-- name:  EVER node change binary name
-  lineinfile: 
-    path: "{{ ever_node_src_dir }}/ever_node/Cargo.toml"
-    regexp: '^name ='
-    line:  "name = 'ever_node'"
+#- name:  EVER node change binary name
+#  lineinfile: 
+#    path: "{{ ever_node_src_dir }}/ever_node/Cargo.toml"
+#    regexp: "^name = 'ton_node'"
+#    line:  "name = 'ever_node'"
 
 - name:  EVER node change release options
   blockinfile: 
@@ -110,15 +110,34 @@
     regexp: '^log4rs ='
     line: "log4rs = { features = [ 'pattern_encoder', 'json_encoder' ], version = '1.2.0' }"
 
-- name: Get EVER node tools sources
-  git:
-    repo: "{{ ever_node_tools_github_repo }}"
-    dest: "{{ ever_node_src_dir }}/ever_node_tools"
-    version: "{{ ever_node_tools_github_commit_id }}"
-    force: true
-  register: ever_node_tools_sources
+#- name: Get EVER node tools sources
+#  git:
+#    repo: "{{ ever_node_tools_github_repo }}"
+#    dest: "{{ ever_node_src_dir }}/ever_node_tools"
+#    version: "{{ ever_node_tools_github_commit_id }}"
+#    force: true
+#  register: ever_node_tools_sources
 
-- name: Updating EVER node tools submodules
+#- name: Updating EVER node tools submodules
+#  shell: |
+#    set -euo pipefail
+#    git submodule init
+#    git submodule update --recursive
+#    git submodule foreach 'git submodule init'
+#    git submodule foreach 'git submodule update  --recursive'
+#  args:
+#    executable: "/bin/bash"
+#    chdir: "{{ ever_node_src_dir }}/ever_node_tools"
+
+- name: Get ever-cli sources
+  git:
+    repo: "{{ ever_cli_github_repo }}"
+    dest: "{{ ever_node_src_dir }}/ever-cli"
+    version: "{{ ever_cli_github_commit_id }}"
+    force: true
+  register: ever_cli_sources
+
+- name: Updating ever-cli submodules
   shell: |
     set -euo pipefail
     git submodule init
@@ -127,26 +146,7 @@
     git submodule foreach 'git submodule update  --recursive'
   args:
     executable: "/bin/bash"
-    chdir: "{{ ever_node_src_dir }}/ever_node_tools"
-
-- name: Get tonos-cli sources
-  git:
-    repo: "{{ tonos_cli_github_repo }}"
-    dest: "{{ ever_node_src_dir }}/tonos_cli"
-    version: "{{ tonos_cli_github_commit_id }}"
-    force: true
-  register: tonos_cli_sources
-
-- name: Updating tonos-cli submodules
-  shell: |
-    set -euo pipefail
-    git submodule init
-    git submodule update --recursive
-    git submodule foreach 'git submodule init'
-    git submodule foreach 'git submodule update  --recursive'
-  args:
-    executable: "/bin/bash"
-    chdir: "{{ ever_node_src_dir }}/tonos_cli"
+    chdir: "{{ ever_node_src_dir }}/ever-cli"
 
 - name: Get tvm linker sources
   git:
@@ -186,25 +186,25 @@
     ZSTD_LIB_DIR: "{% if ansible_pkg_mgr == 'dnf' %}/usr/local/lib{% elif ansible_pkg_mgr == 'apt' %}/usr/lib/x86_64-linux-gnu{% endif %}"
     PKG_CONFIG_PATH: "/usr/local/lib/pkgconfig"
 
-- name: Build EVER node tools
-  block:
-    - name: Update repo deps | node tools
-      command: '{{ ansible_env.HOME }}/.cargo/bin/cargo update --manifest-path {{ ever_node_src_dir }}/ever_node_tools/Cargo.toml'
-    - name: Build repo | node tools
-      command: '{{ ansible_env.HOME }}/.cargo/bin/cargo build --manifest-path {{ ever_node_src_dir }}/ever_node_tools/Cargo.toml --target-dir {{ ever_node_src_dir }} --release'
-  when: ever_node_tools_sources.changed or ever_node_tools_force_recompile
-  environment:
-    RUSTFLAGS: "{{ rust_flags }}"
-    ZSTD_LIB_DIR: "{% if ansible_pkg_mgr == 'dnf' %}/usr/local/lib{% elif ansible_pkg_mgr == 'apt' %}/usr/lib/x86_64-linux-gnu{% endif %}"
-    PKG_CONFIG_PATH: "/usr/local/lib/pkgconfig"
+#- name: Build EVER node tools
+#  block:
+#    - name: Update repo deps | node tools
+#      command: '{{ ansible_env.HOME }}/.cargo/bin/cargo update --manifest-path {{ ever_node_src_dir }}/ever_node_tools/Cargo.toml'
+#    - name: Build repo | node tools
+#      command: '{{ ansible_env.HOME }}/.cargo/bin/cargo build --manifest-path {{ ever_node_src_dir }}/ever_node_tools/Cargo.toml --target-dir {{ ever_node_src_dir }} --release'
+#  when: ever_node_tools_sources.changed or ever_node_tools_force_recompile
+#  environment:
+#    RUSTFLAGS: "{{ rust_flags }}"
+#    ZSTD_LIB_DIR: "{% if ansible_pkg_mgr == 'dnf' %}/usr/local/lib{% elif ansible_pkg_mgr == 'apt' %}/usr/lib/x86_64-linux-gnu{% endif %}"
+#    PKG_CONFIG_PATH: "/usr/local/lib/pkgconfig"
 
-- name: Build tonos-cli
+- name: Build ever-cli
   block:
-    - name: Update repo deps | tonos-cli
-      command: '{{ ansible_env.HOME }}/.cargo/bin/cargo update --manifest-path {{ ever_node_src_dir }}/tonos_cli/Cargo.toml'
+    - name: Update repo deps | ever-cli
+      command: '{{ ansible_env.HOME }}/.cargo/bin/cargo update --manifest-path {{ ever_node_src_dir }}/ever-cli/Cargo.toml'
     - name: Build repo | tonos cli
-      command: '{{ ansible_env.HOME }}/.cargo/bin/cargo build --manifest-path {{ ever_node_src_dir }}/tonos_cli/Cargo.toml --target-dir {{ ever_node_src_dir }} --release'
-  when: tonos_cli_sources.changed or tonos_cli_force_recompile
+      command: '{{ ansible_env.HOME }}/.cargo/bin/cargo build --manifest-path {{ ever_node_src_dir }}/ever-cli/Cargo.toml --target-dir {{ ever_node_src_dir }} --release'
+  when: ever_cli_sources.changed or ever_cli_force_recompile
   environment:
     RUSTFLAGS: "{{ rust_flags }}"
     ZSTD_LIB_DIR: "{% if ansible_pkg_mgr == 'dnf' %}/usr/local/lib{% elif ansible_pkg_mgr == 'apt' %}/usr/lib/x86_64-linux-gnu{% endif %}"

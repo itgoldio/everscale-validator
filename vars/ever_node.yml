@@ -33,7 +33,7 @@ ever_node_github_repo: "https://github.com/tonlabs/ever-node.git"
 ever_node_github_commit_id: "master"
 
 # Recompile binary without sources changes: false|true
-ever_node_force_recompile: true
+ever_node_force_recompile: false
 
 # Get everscale node tools commit id: https://github.com/tonlabs/ever-node-tools/commits"
 ever_node_tools_github_repo: "https://github.com/tonlabs/ever-node-tools.git"
@@ -42,12 +42,12 @@ ever_node_tools_github_commit_id: "master"
 # Recompile binary without sources changes: false|true
 ever_node_tools_force_recompile: true
 
-# Get tonos cli commit id: https://github.com/tonlabs/tonos-cli/commits"
-tonos_cli_github_repo: "https://github.com/tonlabs/tonos-cli.git"
-tonos_cli_github_commit_id: "master"
+# Get ever-cli commit id: https://github.com/tonlabs/ever-cli/commits"
+ever_cli_github_repo: "https://github.com/tonlabs/ever-cli.git"
+ever_cli_github_commit_id: "master"
 
 # Recompile binary without sources changes: false|true
-tonos_cli_force_recompile: true
+ever_cli_force_recompile: false
 
 # Get TVM linker commit id: https://github.com/tonlabs/TVM-linker/commits"
 tvm_linker_github_repo: "https://github.com/tonlabs/TVM-linker.git"

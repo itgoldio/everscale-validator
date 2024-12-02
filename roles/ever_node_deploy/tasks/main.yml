@@ -17,9 +17,9 @@
     - keygen
     - print
     - zerostate
-  when: ever_node_tools_sources.changed or ever_node_tools_force_recompile
+#  when: ever_node_tools_sources.changed or ever_node_tools_force_recompile
 
-- name: Copy tonos-cli binaries
+- name: Copy ever-cli binaries
   copy:
     src: "{{ ever_node_src_dir }}/release/tonos-cli"
     dest: "{{ ever_node_tools_dir }}"
@@ -27,7 +27,7 @@
     group: "{{ ever_node_group }}"
     mode: u=rwx,g=rx,o=
     remote_src: yes
-  when: tonos_cli_sources.changed or tonos_cli_force_recompile
+  when: ever_cli_sources.changed or ever_cli_force_recompile
 
 - name: Copy tvm linker binaries
   copy:
@@ -41,8 +41,8 @@
 
 - name: Copy ever node binaries
   copy:
-    src: "{{ ever_node_src_dir }}/release/ever_node"
-    dest: "{{ ever_node_bin_dir }}"
+    src: "{{ ever_node_src_dir }}/release/ton_node"
+    dest: "{{ ever_node_bin_dir }}/ever_node"
     owner: "{{ ever_node_user }}"
     group: "{{ ever_node_group }}"
     mode: u=rwx,g=rx,o=
